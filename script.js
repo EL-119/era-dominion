@@ -31,7 +31,7 @@ const evolutions = [
 const state = {
   running:false, finished:false, timeLeft:180, score:0, level:0, stageProgress:1,
   player:{x:1320,y:920,vx:0,vy:0,trail:[]}, camera:{x:0,y:0},
-  followers:[], citizens:[], particles:[], floaters:[], keys:{}, pointer:null, last:0,
+  followers:[], citizens:[], enemies:[], particles:[], floaters:[], keys:{}, pointer:null, last:0,
   shake:0, pulse:0, dangerFlash:0, loopStarted:false
 };
 
@@ -56,8 +56,13 @@ const props = [
 
 function showView(id){
   views.forEach(v => v.classList.toggle('active', v.id === id));
-  window.scrollTo({top:0, behavior:'smooth'});
-  if(id === 'game') startGame(true);
+  document.body.classList.toggle('playing-mode', id === 'game');
+  if(id === 'game'){
+    startGame(true);
+    requestAnimationFrame(() => document.getElementById('game').scrollIntoView({block:'start'}));
+  } else {
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
   if(id === 'home') drawPreview();
 }
 navButtons.forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
@@ -91,11 +96,21 @@ function makeCitizen(strong=false){
   return { x:p.x, y:p.y, vx:rand(-45,45), vy:rand(-45,45), r, tier, strength, value:strength, absorbed:false, wander:rand(.4,2.4), bob:rand(0,10),
     color:tier===1?'#d7d3c9':tier===2?'#ffbd56':'#ff5d72', outline:tier===1?'#fff7e4':tier===2?'#ffe3a1':'#ffd5dc' };
 }
-function seedCitizens(){ return Array.from({length:240},()=>makeCitizen(false)).concat(Array.from({length:40},()=>makeCitizen(true))); }
+function seedCitizens(){ return Array.from({length:260},()=>makeCitizen(false)).concat(Array.from({length:45},()=>makeCitizen(true))); }
+function makeEnemy(i){
+  const p=safePoint();
+  const colors=['#ff4f6d','#ff8a35','#43d17a','#b86cff','#f2d14b','#23c9ff','#ff5db8','#9ec43f','#ff7043','#7f8cff','#00b894','#e17055'];
+  return { id:i, x:p.x, y:p.y, vx:0, vy:0, level:0, progress:rand(8,34), score:0, r:18, color:colors[i%colors.length], accent:'#fff4dd', target:null, think:0, name:`적 세력 ${i+1}`, absorbed:false, trail:[] };
+}
+function seedEnemies(){
+  const area = WORLD.w * WORLD.h;
+  const count = Math.max(8, Math.min(14, Math.round(area / 360000)));
+  return Array.from({length:count},(_,i)=>makeEnemy(i));
+}
 function startGame(force=false){
   state.running=true; state.finished=false; state.timeLeft=180; state.score=0; state.level=0; state.stageProgress=1;
   state.player.x=1320; state.player.y=920; state.player.vx=0; state.player.vy=0; state.player.trail=[];
-  state.followers=[]; state.citizens=seedCitizens(); state.particles=[]; state.floaters=[]; state.shake=0; state.pulse=0; state.dangerFlash=0; state.pointer=null;
+  state.followers=[]; state.citizens=seedCitizens(); state.enemies=seedEnemies(); state.particles=[]; state.floaters=[]; state.shake=0; state.pulse=0; state.dangerFlash=0; state.pointer=null;
   banner.classList.add('hidden'); showStartNotice(); updateCamera(); updateHud();
   if(force || !state.loopStarted){ state.loopStarted=true; state.last=performance.now(); requestAnimationFrame(loop); }
 }
@@ -113,8 +128,8 @@ function input(dt){
   let ax=0, ay=0;
   if(state.keys['arrowleft'] || state.keys['a']) ax -= 1; if(state.keys['arrowright'] || state.keys['d']) ax += 1;
   if(state.keys['arrowup'] || state.keys['w']) ay -= 1; if(state.keys['arrowdown'] || state.keys['s']) ay += 1;
-  if(state.pointer){ ax += (state.pointer.x-state.player.x)/150; ay += (state.pointer.y-state.player.y)/150; }
-  const mag=Math.hypot(ax,ay), speed=230+state.level*18;
+  if(state.pointer){ ax += (state.pointer.x-state.player.x)/230; ay += (state.pointer.y-state.player.y)/230; }
+  const mag=Math.hypot(ax,ay), speed=150+state.level*12;
   if(mag>.05){ state.player.vx=(ax/mag)*speed; state.player.vy=(ay/mag)*speed; } else { state.player.vx*=.72; state.player.vy*=.72; }
   moveWithCollision(state.player,state.player.vx*dt,state.player.vy*dt,evolutions[state.level].size*.72);
   state.player.trail.push({x:state.player.x,y:state.player.y,life:.35,size:evolutions[state.level].size});
@@ -143,7 +158,9 @@ function update(dt){
     if(d < e.size + c.r + 10) tryAbsorb(c);
   }
   state.citizens = state.citizens.filter(c => !c.absorbed);
-  while(state.citizens.length < 280) state.citizens.push(makeCitizen(Math.random()<.16));
+  updateEnemies(dt);
+  state.enemies = state.enemies.filter(e => !e.absorbed);
+  while(state.citizens.length < 305) state.citizens.push(makeCitizen(Math.random()<.16));
   updateFollowers(dt); updateParticles(dt); state.shake=Math.max(0,state.shake-dt*16); state.dangerFlash=Math.max(0,state.dangerFlash-dt*2.8); updateHud();
 }
 function tryAbsorb(c){
@@ -168,6 +185,122 @@ function evolve(){
   burst(state.player.x,state.player.y,e.color,120,true); addFloater(state.player.x,state.player.y-70,'진화 완료',e.accent);
   bannerLevel.textContent=e.name; bannerBoost.textContent=`흡수 점수 x${e.value.toLocaleString()}  흡수 범위 확대`; banner.classList.remove('hidden'); setTimeout(()=>banner.classList.add('hidden'),1500);
 }
+
+function enemyPower(enemy){ return enemy.progress + enemy.level*35; }
+function playerPower(){ return state.stageProgress + state.level*35; }
+function updateEnemies(dt){
+  for(const enemy of state.enemies){
+    if(enemy.absorbed) continue;
+    enemy.think -= dt;
+    const myPower = enemyPower(enemy);
+    let target = enemy.target;
+    if(enemy.think <= 0 || !target || target.absorbed){
+      target = chooseEnemyTarget(enemy, myPower);
+      enemy.target = target;
+      enemy.think = rand(.25,.75);
+    }
+    let ax=0, ay=0;
+    if(target){
+      const tx=target.x, ty=target.y;
+      const d=Math.hypot(tx-enemy.x, ty-enemy.y) || 1;
+      const targetPower = target.kind === 'player' ? playerPower() : target.kind === 'enemy' ? enemyPower(target.ref) : target.ref.strength;
+      const hunt = myPower >= targetPower || target.kind === 'citizen';
+      const dir = hunt ? 1 : -1;
+      ax += ((tx-enemy.x)/d) * dir;
+      ay += ((ty-enemy.y)/d) * dir;
+    } else {
+      ax += rand(-1,1); ay += rand(-1,1);
+    }
+    const mag=Math.hypot(ax,ay) || 1;
+    const speed = 105 + enemy.level*10 + Math.min(35, enemy.progress*.12);
+    enemy.vx = enemy.vx*.82 + (ax/mag)*speed*.18;
+    enemy.vy = enemy.vy*.82 + (ay/mag)*speed*.18;
+    moveWithCollision(enemy, enemy.vx*dt, enemy.vy*dt, 17 + enemy.level*3);
+    enemy.trail.push({x:enemy.x,y:enemy.y,life:.25,size:18+enemy.level*4});
+    if(enemy.trail.length>14) enemy.trail.shift();
+
+    for(const c of state.citizens){
+      if(c.absorbed) continue;
+      const d=Math.hypot(c.x-enemy.x,c.y-enemy.y);
+      if(d < 78 + enemy.level*18){
+        const pull=(1-d/(78+enemy.level*18))*2.1;
+        c.vx += (enemy.x-c.x)*dt*pull;
+        c.vy += (enemy.y-c.y)*dt*pull;
+      }
+      if(d < 25 + c.r){ enemyAbsorbCitizen(enemy,c); }
+    }
+
+    for(const other of state.enemies){
+      if(other===enemy || other.absorbed) continue;
+      const d=Math.hypot(other.x-enemy.x, other.y-enemy.y);
+      if(d < 34 + enemy.level*4 + other.level*4){
+        if(enemyPower(enemy) >= enemyPower(other)*1.08) enemyAbsorbEnemy(enemy, other);
+      }
+    }
+
+    const pd=Math.hypot(state.player.x-enemy.x,state.player.y-enemy.y);
+    if(pd < evolutions[state.level].size + 26 + enemy.level*5){
+      if(playerPower() >= enemyPower(enemy)*1.05){
+        absorbEnemyByPlayer(enemy);
+      } else {
+        hitPlayerByEnemy(enemy);
+      }
+    }
+  }
+}
+function chooseEnemyTarget(enemy, myPower){
+  let best=null, bestScore=Infinity;
+  for(const c of state.citizens){
+    if(c.absorbed) continue;
+    const d=Math.hypot(c.x-enemy.x,c.y-enemy.y);
+    const score=d/(c.value||1);
+    if(score<bestScore){ bestScore=score; best={kind:'citizen',ref:c,x:c.x,y:c.y}; }
+  }
+  for(const other of state.enemies){
+    if(other===enemy || other.absorbed) continue;
+    const d=Math.hypot(other.x-enemy.x,other.y-enemy.y);
+    if(enemyPower(other)<myPower*.92 && d/4<bestScore){ bestScore=d/4; best={kind:'enemy',ref:other,x:other.x,y:other.y}; }
+  }
+  const pd=Math.hypot(state.player.x-enemy.x,state.player.y-enemy.y);
+  if(playerPower()<myPower*.9 && pd/5<bestScore) best={kind:'player',ref:state.player,x:state.player.x,y:state.player.y};
+  return best;
+}
+function enemyAbsorbCitizen(enemy,c){
+  c.absorbed=true;
+  enemy.progress += c.value;
+  enemy.score += c.value * evolutions[enemy.level].value;
+  burst(c.x,c.y,enemy.color,c.tier>1?22:8,c.tier>1);
+  if(enemy.progress >= evolutions[enemy.level].need && enemy.level < evolutions.length-1){
+    enemy.level++; enemy.progress=1; enemy.r = 18 + enemy.level*4; burst(enemy.x,enemy.y,enemy.color,70,true); addFloater(enemy.x,enemy.y-55,'적 진화',enemy.color);
+  }
+}
+function enemyAbsorbEnemy(enemy,other){
+  other.absorbed=true;
+  enemy.progress += Math.max(8, Math.floor(enemyPower(other)/2));
+  enemy.score += other.score;
+  burst(other.x,other.y,enemy.color,80,true); addFloater(other.x,other.y-50,'세력 흡수',enemy.color);
+}
+function absorbEnemyByPlayer(enemy){
+  enemy.absorbed=true;
+  const e=evolutions[state.level];
+  const gain=Math.max(20, Math.floor(enemyPower(enemy)/2));
+  state.stageProgress += gain;
+  state.score += gain * e.value;
+  burst(enemy.x,enemy.y,e.color,100,true); addFloater(enemy.x,enemy.y-60,`적 격파 +${gain}`,e.accent);
+  if(state.stageProgress>=e.need && state.level<evolutions.length-1) evolve();
+}
+function hitPlayerByEnemy(enemy){
+  const e=evolutions[state.level];
+  const loss=Math.min(Math.max(6, Math.floor(enemyPower(enemy)/6)), Math.max(1, Math.floor(state.stageProgress-1)));
+  state.stageProgress=Math.max(1,state.stageProgress-loss);
+  state.score=Math.max(0,state.score-loss*e.value);
+  state.dangerFlash=1; state.shake=11;
+  const d=Math.hypot(state.player.x-enemy.x,state.player.y-enemy.y)||1;
+  state.player.x=clamp(state.player.x+(state.player.x-enemy.x)/d*45,35,WORLD.w-35);
+  state.player.y=clamp(state.player.y+(state.player.y-enemy.y)/d*45,45,WORLD.h-35);
+  addFloater(state.player.x,state.player.y-56,`-${loss}`, '#ff6377'); burst(state.player.x,state.player.y,'#ff6377',32,true);
+}
+
 function updateFollowers(dt){
   state.followers=state.followers.slice(-120);
   state.followers.forEach((f,i)=>{ const angle=i*2.399+state.pulse*.25, ring=48+Math.floor(i/12)*26; const tx=state.player.x+Math.cos(angle)*ring, ty=state.player.y+Math.sin(angle)*ring*.72; f.x+=(tx-f.x)*Math.min(1,dt*5.2); f.y+=(ty-f.y)*Math.min(1,dt*5.2); });
@@ -185,8 +318,8 @@ function draw(){
   const sx=state.shake?rand(-state.shake,state.shake):0, sy=state.shake?rand(-state.shake,state.shake):0; ctx.clearRect(0,0,VIEW.w,VIEW.h); ctx.save(); ctx.translate(sx,sy); ctx.translate(-state.camera.x,-state.camera.y);
   drawWorld(ctx); if(state.dangerFlash>0){ ctx.save(); ctx.translate(state.camera.x,state.camera.y); ctx.fillStyle=`rgba(255,40,70,${state.dangerFlash*.12})`; ctx.fillRect(-20,-20,VIEW.w+40,VIEW.h+40); ctx.restore(); }
   drawAura(ctx,state.player.x,state.player.y,evolutions[state.level]);
-  const drawItems=[...state.citizens.map(o=>({type:'citizen',o,y:o.y})),...state.followers.map(o=>({type:'follower',o,y:o.y})),...buildings.map(o=>({type:'building',o,y:o.y+o.h})),...props.map(o=>({type:'prop',o,y:o.y+80})),{type:'player',o:state.player,y:state.player.y}].sort((a,b)=>a.y-b.y);
-  for(const item of drawItems){ if(item.type==='building') drawBuilding(ctx,item.o); if(item.type==='prop') drawProp(ctx,item.o); if(item.type==='citizen') drawCitizen(ctx,item.o); if(item.type==='follower') drawFollower(ctx,item.o); if(item.type==='player') drawPlayer(ctx,item.o,evolutions[state.level]); }
+  const drawItems=[...state.citizens.map(o=>({type:'citizen',o,y:o.y})),...state.followers.map(o=>({type:'follower',o,y:o.y})),...state.enemies.map(o=>({type:'enemy',o,y:o.y})),...buildings.map(o=>({type:'building',o,y:o.y+o.h})),...props.map(o=>({type:'prop',o,y:o.y+80})),{type:'player',o:state.player,y:state.player.y}].sort((a,b)=>a.y-b.y);
+  for(const item of drawItems){ if(item.type==='building') drawBuilding(ctx,item.o); if(item.type==='prop') drawProp(ctx,item.o); if(item.type==='citizen') drawCitizen(ctx,item.o); if(item.type==='follower') drawFollower(ctx,item.o); if(item.type==='enemy') drawEnemy(ctx,item.o); if(item.type==='player') drawPlayer(ctx,item.o,evolutions[state.level]); }
   drawParticles(ctx); drawFloaters(ctx); ctx.restore(); drawMiniMap(ctx);
 }
 function drawWorld(c){
@@ -208,11 +341,25 @@ function drawPlayer(c,p,e){ for(const t of state.player.trail){ c.globalAlpha=Ma
 function drawCharacter(c,x,y,size,color,accent,level,ghost=false){ c.save(); c.fillStyle='rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(x,y+size*1.05,size*1.05,size*.32,0,0,Math.PI*2); c.fill(); if(level>=3){ c.fillStyle=ghost?color:shade(color,-18); c.globalAlpha=ghost?.18:.68; c.beginPath(); c.moveTo(x-size*.92,y-size*.2); c.quadraticCurveTo(x,y+size*1.9,x+size*.92,y-size*.2); c.closePath(); c.fill(); c.globalAlpha=1; } c.strokeStyle=accent; c.lineWidth=Math.max(2,size*.09); c.globalAlpha=ghost?.25:.85; c.beginPath(); c.arc(x,y+size*.18,size*(1.08+level*.08),state.pulse*1.5,state.pulse*1.5+Math.PI*1.45); c.stroke(); c.globalAlpha=1; const body=c.createLinearGradient(x-size,y-size,x+size,y+size); body.addColorStop(0,accent); body.addColorStop(.45,color); body.addColorStop(1,shade(color,-36)); c.fillStyle=body; roundRect(c,x-size*.62,y-size*.16,size*1.24,size*1.33,size*.34); c.fill(); c.fillStyle=accent; roundRect(c,x-size*.47,y+size*.38,size*.94,size*.22,size*.12); c.fill(); c.fillStyle=body; c.beginPath(); c.arc(x,y-size*.78,size*.48,0,Math.PI*2); c.fill(); c.fillStyle='rgba(255,255,255,.85)'; c.beginPath(); c.arc(x-size*.14,y-size*.86,size*.055,0,Math.PI*2); c.arc(x+size*.14,y-size*.86,size*.055,0,Math.PI*2); c.fill(); if(level>=2) drawCrown(c,x,y-size*1.32,size*.72,level>=4?'#ffd36a':accent); c.restore(); }
 function drawCrown(c,x,y,s,color){ c.fillStyle=color; c.beginPath(); c.moveTo(x-s*.55,y+s*.35); c.lineTo(x-s*.38,y-s*.2); c.lineTo(x-s*.14,y+s*.14); c.lineTo(x,y-s*.42); c.lineTo(x+s*.14,y+s*.14); c.lineTo(x+s*.38,y-s*.2); c.lineTo(x+s*.55,y+s*.35); c.closePath(); c.fill(); }
 function drawCitizen(c,o){ if(!inView(o.x,o.y,120)) return; c.save(); const y=o.y+Math.sin(o.bob)*2; c.fillStyle='rgba(0,0,0,.24)'; c.beginPath(); c.ellipse(o.x,y+o.r*1.25,o.r*1.05,o.r*.32,0,0,Math.PI*2); c.fill(); if(o.tier>1){ c.strokeStyle=o.color; c.globalAlpha=.42; c.lineWidth=2; c.beginPath(); c.arc(o.x,y,o.r*2.05,0,Math.PI*2); c.stroke(); c.globalAlpha=1; } const grad=c.createLinearGradient(o.x-o.r,y-o.r,o.x+o.r,y+o.r); grad.addColorStop(0,o.outline); grad.addColorStop(.55,o.color); grad.addColorStop(1,shade(o.color,-34)); c.fillStyle=grad; roundRect(c,o.x-o.r*.55,y-o.r*.1,o.r*1.1,o.r*1.35,o.r*.32); c.fill(); c.beginPath(); c.arc(o.x,y-o.r*.75,o.r*.48,0,Math.PI*2); c.fill(); if(o.tier>1) drawNameplate(c,o.x,y-o.r*2.5,`${o.strength}`,o.color); c.restore(); }
+
+function drawEnemy(c,o){
+  if(!inView(o.x,o.y,170)) return;
+  const e=evolutions[o.level];
+  c.save();
+  for(const t of o.trail){ c.globalAlpha=Math.max(0,t.life)*.18; drawCharacter(c,t.x,t.y,t.size*.82,o.color,o.accent,o.level,true); }
+  c.globalAlpha=1;
+  c.strokeStyle=o.color; c.globalAlpha=.25; c.lineWidth=3; c.setLineDash([8,8]);
+  c.beginPath(); c.arc(o.x,o.y,78+o.level*18,0,Math.PI*2); c.stroke(); c.setLineDash([]); c.globalAlpha=1;
+  drawCharacter(c,o.x,o.y,18+o.level*4,o.color,o.accent,o.level,false);
+  drawNameplate(c,o.x,o.y-(44+o.level*5),`적 ${Math.floor(o.progress)}`,o.color);
+  c.restore();
+}
+
 function drawFollower(c,o){ drawCharacter(c,o.x,o.y,o.r,o.color,'#bfe6ff',0,true); }
 function drawNameplate(c,x,y,text,color){ c.save(); c.font='800 16px system-ui'; const w=c.measureText(text).width+20; c.fillStyle='rgba(4,10,18,.78)'; roundRect(c,x-w/2,y-17,w,28,14); c.fill(); c.strokeStyle=color; c.lineWidth=2; c.stroke(); c.fillStyle='#ffffff'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(text,x,y-3); c.restore(); }
 function drawParticles(c){ c.save(); for(const p of state.particles){ if(!inView(p.x,p.y,80)) continue; c.globalAlpha=Math.max(0,p.life); c.fillStyle=p.color; c.beginPath(); c.arc(p.x,p.y,p.r,0,Math.PI*2); c.fill(); } c.restore(); }
 function drawFloaters(c){ c.save(); c.textAlign='center'; c.textBaseline='middle'; for(const f of state.floaters){ if(!inView(f.x,f.y,80)) continue; c.globalAlpha=Math.max(0,f.life); c.font='900 20px system-ui'; c.strokeStyle='rgba(0,0,0,.8)'; c.lineWidth=5; c.strokeText(f.text,f.x,f.y); c.fillStyle=f.color; c.fillText(f.text,f.x,f.y); } c.restore(); }
-function drawMiniMap(c){ const x=1012,y=18,w=170,h=118; c.save(); c.fillStyle='rgba(5,11,20,.76)'; roundRect(c,x,y,w,h,16); c.fill(); c.strokeStyle='rgba(255,255,255,.18)'; c.stroke(); c.fillStyle='rgba(255,255,255,.14)'; for(const b of buildings){ c.fillRect(x+b.x/WORLD.w*w,y+b.y/WORLD.h*h,Math.max(2,b.w/WORLD.w*w),Math.max(2,b.h/WORLD.h*h)); } c.fillStyle='#d7d3c9'; for(let i=0;i<state.citizens.length;i+=6){ const z=state.citizens[i]; c.fillRect(x+z.x/WORLD.w*w,y+z.y/WORLD.h*h,2,2); } c.strokeStyle='#fff'; c.strokeRect(x+state.camera.x/WORLD.w*w,y+state.camera.y/WORLD.h*h,VIEW.w/WORLD.w*w,VIEW.h/WORLD.h*h); c.fillStyle=evolutions[state.level].color; c.beginPath(); c.arc(x+state.player.x/WORLD.w*w,y+state.player.y/WORLD.h*h,4,0,Math.PI*2); c.fill(); c.restore(); }
+function drawMiniMap(c){ const x=1012,y=18,w=170,h=118; c.save(); c.fillStyle='rgba(5,11,20,.76)'; roundRect(c,x,y,w,h,16); c.fill(); c.strokeStyle='rgba(255,255,255,.18)'; c.stroke(); c.fillStyle='rgba(255,255,255,.14)'; for(const b of buildings){ c.fillRect(x+b.x/WORLD.w*w,y+b.y/WORLD.h*h,Math.max(2,b.w/WORLD.w*w),Math.max(2,b.h/WORLD.h*h)); } c.fillStyle='#d7d3c9'; for(let i=0;i<state.citizens.length;i+=6){ const z=state.citizens[i]; c.fillRect(x+z.x/WORLD.w*w,y+z.y/WORLD.h*h,2,2); } c.strokeStyle='#fff'; c.strokeRect(x+state.camera.x/WORLD.w*w,y+state.camera.y/WORLD.h*h,VIEW.w/WORLD.w*w,VIEW.h/WORLD.h*h); c.fillStyle='#ff6377'; for(const en of state.enemies){ c.beginPath(); c.arc(x+en.x/WORLD.w*w,y+en.y/WORLD.h*h,3,0,Math.PI*2); c.fill(); } c.fillStyle=evolutions[state.level].color; c.beginPath(); c.arc(x+state.player.x/WORLD.w*w,y+state.player.y/WORLD.h*h,4,0,Math.PI*2); c.fill(); c.restore(); }
 function roundRect(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.lineTo(x+w-r,y); c.quadraticCurveTo(x+w,y,x+w,y+r); c.lineTo(x+w,y+h-r); c.quadraticCurveTo(x+w,y+h,x+w-r,y+h); c.lineTo(x+r,y+h); c.quadraticCurveTo(x,y+h,x,y+h-r); c.lineTo(x,y+r); c.quadraticCurveTo(x,y,x+r,y); c.closePath(); }
 function shade(hex,amt){ const n=parseInt(hex.replace('#',''),16); let r=(n>>16)+amt,g=(n>>8&255)+amt,b=(n&255)+amt; r=clamp(r,0,255); g=clamp(g,0,255); b=clamp(b,0,255); return `rgb(${r},${g},${b})`; }
 function loop(now){ const dt=Math.min(.033,(now-state.last)/1000 || .016); state.last=now; update(dt); draw(); requestAnimationFrame(loop); }
