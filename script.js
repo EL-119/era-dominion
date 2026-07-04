@@ -466,3 +466,253 @@ function shade(hex,amt){ const n=parseInt(hex.replace('#',''),16); let r=(n>>16)
 function loop(now){ const dt=Math.min(.033,(now-state.last)/1000 || .016); state.last=now; update(dt); draw(); requestAnimationFrame(loop); }
 function drawPreview(){ const w=previewCanvas.width,h=previewCanvas.height; const oldCam={...state.camera}; state.camera={x:840,y:600}; const oldView={w:VIEW.w,h:VIEW.h}; drawWorld(pctx); state.camera=oldCam; pctx.save(); pctx.scale(w/WORLD.w*2.1,h/WORLD.h*2.1); pctx.restore(); pctx.clearRect(0,0,w,h); const grad=pctx.createLinearGradient(0,0,w,h); grad.addColorStop(0,'#4f7a58'); grad.addColorStop(.52,'#c69b5f'); grad.addColorStop(1,'#4e3828'); pctx.fillStyle=grad; pctx.fillRect(0,0,w,h); pctx.strokeStyle='rgba(92,66,42,.72)'; pctx.lineWidth=34; pctx.beginPath(); pctx.moveTo(-20,h*.58); pctx.bezierCurveTo(w*.3,h*.4,w*.55,h*.72,w+40,h*.45); pctx.stroke(); for(let i=0;i<9;i++){ drawBuilding(pctx,{x:rand(20,w-150),y:rand(20,h-120),w:rand(70,120),h:rand(70,100),roof:'#5a2b1c',wall:'#b0814d'}); } const fakeE=evolutions[3]; drawAura(pctx,w*.5,h*.55,{...fakeE,aura:92}); for(let i=0;i<44;i++){ const a=i*2.399,r=40+Math.floor(i/10)*25; drawCharacter(pctx,w*.5+Math.cos(a)*r,h*.55+Math.sin(a)*r*.72,7,'#2f80ff','#bfe6ff',0,true); } for(let i=0;i<34;i++) drawCitizen(pctx,{x:rand(30,w-30),y:rand(50,h-35),r:rand(6,9),tier:i%9===0?2:1,strength:i%9===0?18:1,color:i%9===0?'#ffbd56':'#d7d3c9',outline:'#fff7e4',bob:0}); drawCharacter(pctx,w*.5,h*.55,28,fakeE.color,fakeE.accent,3,false); drawNameplate(pctx,w*.5,h*.55-66,'87 / 100',fakeE.color); }
 drawPreview();
+
+/* v7 patch: full-screen routing, scalable canvas, clearer evolution, improved visuals */
+showView = function(id){
+  views.forEach(v => v.classList.toggle('active', v.id === id));
+  document.body.classList.toggle('playing-mode', id === 'game');
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+  if(id === 'game'){
+    requestAnimationFrame(() => {
+      fitGameCanvas();
+      startGame(true);
+      fitGameCanvas();
+      window.scrollTo(0,0);
+    });
+  }
+};
+
+document.addEventListener('click', (e) => {
+  const start = e.target.closest('#startGame');
+  const nav = e.target.closest('[data-view]');
+  if(start){ e.preventDefault(); e.stopPropagation(); showView('game'); return; }
+  if(nav){ e.preventDefault(); e.stopPropagation(); showView(nav.dataset.view); }
+}, true);
+
+fitGameCanvas = function(){
+  const wrap = document.querySelector('.canvas-wrap');
+  if(!wrap) return;
+  const rect = wrap.getBoundingClientRect();
+  if(rect.width < 10 || rect.height < 10) return;
+  const w = Math.max(320, Math.floor(rect.width));
+  const h = Math.max(260, Math.floor(rect.height));
+  if(gameCanvas.width !== w || gameCanvas.height !== h){
+    gameCanvas.width = w;
+    gameCanvas.height = h;
+    VIEW.w = w;
+    VIEW.h = h;
+    updateCamera();
+  }
+  gameCanvas.style.width = '100%';
+  gameCanvas.style.height = '100%';
+};
+
+function levelVisual(level){
+  return [
+    {label:'시민 리더', stars:'★', icon:'●', color:'#2f80ff', accent:'#9fd2ff'},
+    {label:'도시 대장', stars:'★★', icon:'◆', color:'#20d6ff', accent:'#b9fbff'},
+    {label:'구역 지배자', stars:'★★★', icon:'⬟', color:'#8f53ff', accent:'#dbc5ff'},
+    {label:'도시 군주', stars:'★★★★', icon:'✦', color:'#e34f64', accent:'#ffc0c8'},
+    {label:'도시의 왕', stars:'★★★★★', icon:'♛', color:'#ffd36a', accent:'#fff0af'},
+    {label:'도시의 황제', stars:'★★★★★★', icon:'♕', color:'#fff2ad', accent:'#ffffff'}
+  ][Math.max(0, Math.min(5, level))];
+}
+
+function openPointNearCenter(){
+  const tries = [
+    {x:1320,y:920},{x:1320,y:760},{x:1050,y:900},{x:1560,y:900},{x:1320,y:1180},{x:980,y:620}
+  ];
+  for(const p of tries) if(!isBlocked(p.x,p.y,44)) return p;
+  return safePoint();
+}
+
+startGame = function(force=false){
+  const oldFinish=document.querySelector('.finish-card-wrap'); if(oldFinish) oldFinish.remove();
+  state.running=true; state.finished=false; state.timeLeft=180; state.score=0; state.level=0; state.stageProgress=1;
+  const start = openPointNearCenter();
+  state.player.x=start.x; state.player.y=start.y; state.player.vx=0; state.player.vy=0; state.player.trail=[];
+  state.followers=[]; state.citizens=seedCitizens(); state.enemies=seedEnemies(); state.particles=[]; state.floaters=[]; state.shake=0; state.pulse=0; state.dangerFlash=0; state.pointer=null;
+  banner.classList.add('hidden'); showStartNotice(); fitGameCanvas(); updateCamera(); updateHud();
+  if(force || !state.loopStarted){ state.loopStarted=true; state.last=performance.now(); requestAnimationFrame(loop); }
+};
+
+input = function(dt){
+  let ax=0,ay=0;
+  if(state.keys['arrowup']||state.keys['w']) ay-=1;
+  if(state.keys['arrowdown']||state.keys['s']) ay+=1;
+  if(state.keys['arrowleft']||state.keys['a']) ax-=1;
+  if(state.keys['arrowright']||state.keys['d']) ax+=1;
+  if(state.pointer){ ax += (state.pointer.x-state.player.x)/260; ay += (state.pointer.y-state.player.y)/260; }
+  const mag=Math.hypot(ax,ay), speed=82+state.level*7;
+  if(mag>.05){ state.player.vx=(ax/mag)*speed; state.player.vy=(ay/mag)*speed; } else { state.player.vx*=.68; state.player.vy*=.68; }
+  moveWithCollision(state.player,state.player.vx*dt,state.player.vy*dt,evolutions[state.level].size*.78);
+  resolveFromBuildings(state.player,evolutions[state.level].size*.9);
+  state.player.trail.push({x:state.player.x,y:state.player.y,life:.32,size:evolutions[state.level].size});
+  if(state.player.trail.length>18) state.player.trail.shift();
+};
+
+moveWithCollision = function(o,dx,dy,r){
+  const steps = Math.max(1, Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)) / 3));
+  const sx = dx / steps, sy = dy / steps;
+  for(let i=0;i<steps;i++){
+    let nx = clamp(o.x + sx, 42, WORLD.w - 42);
+    if(!isBlocked(nx, o.y, r)) o.x = nx; else { o.vx = 0; resolveFromBuildings(o,r+2); }
+    let ny = clamp(o.y + sy, 50, WORLD.h - 42);
+    if(!isBlocked(o.x, ny, r)) o.y = ny; else { o.vy = 0; resolveFromBuildings(o,r+2); }
+    resolveFromBuildings(o,r);
+  }
+};
+
+resolveFromBuildings = function(o,r){
+  for(let k=0;k<3;k++){
+    let pushed=false;
+    for(const b of buildings){
+      const rect=b.block;
+      const nx=clamp(o.x, rect.x, rect.x+rect.w), ny=clamp(o.y, rect.y, rect.y+rect.h);
+      const dx=o.x-nx, dy=o.y-ny, d=Math.hypot(dx,dy);
+      if(d < r + 2){
+        pushed=true;
+        if(d > .001){ const push=(r+2-d); o.x += dx/d*push; o.y += dy/d*push; }
+        else{
+          const distances=[
+            {side:'l',v:Math.abs(o.x-rect.x)}, {side:'r',v:Math.abs(rect.x+rect.w-o.x)},
+            {side:'t',v:Math.abs(o.y-rect.y)}, {side:'b',v:Math.abs(rect.y+rect.h-o.y)}
+          ].sort((a,b)=>a.v-b.v);
+          const s=distances[0].side;
+          if(s==='l') o.x=rect.x-r-3; if(s==='r') o.x=rect.x+rect.w+r+3; if(s==='t') o.y=rect.y-r-3; if(s==='b') o.y=rect.y+rect.h+r+3;
+        }
+        o.x=clamp(o.x,42,WORLD.w-42); o.y=clamp(o.y,50,WORLD.h-42);
+      }
+    }
+    if(!pushed) break;
+  }
+};
+
+function setEnemyLook(enemy){
+  const v=levelVisual(enemy.level);
+  enemy.color = v.color;
+  enemy.accent = v.accent;
+  enemy.r = 18 + enemy.level * 5;
+}
+
+const oldMakeEnemy = makeEnemy;
+makeEnemy = function(i){ const e = oldMakeEnemy(i); e.name = ['붉은 세력','황야 세력','녹색 세력','보라 세력','금빛 세력','청록 세력','분홍 세력','철갑 세력','불꽃 세력','별빛 세력','숲 세력','사막 세력'][i%12]; setEnemyLook(e); return e; };
+
+enemyAbsorbCitizen = function(enemy,c){
+  c.absorbed=true;
+  enemy.progress += c.value;
+  enemy.score += c.value * evolutions[enemy.level].value;
+  burst(c.x,c.y,enemy.color,c.tier>1?18:6,c.tier>1);
+  if(enemy.progress >= evolutions[enemy.level].need && enemy.level < evolutions.length-1){
+    enemy.level++; enemy.progress=1; setEnemyLook(enemy);
+    burst(enemy.x,enemy.y,enemy.color,24,true); addFloater(enemy.x,enemy.y-55,`${enemy.level+1}단계`,enemy.color);
+  }
+};
+
+hitPlayerByEnemy = function(enemy){
+  dieGame(`${enemy.level+1}단계 ${evolutions[enemy.level].name} 적에게 패배`);
+  burst(state.player.x,state.player.y,'#ff6377',70,true);
+};
+
+evolve = function(){
+  state.level++; const e=evolutions[state.level]; state.stageProgress=1; state.followers=[]; state.shake=6;
+  burst(state.player.x,state.player.y,e.color,22,true); addFloater(state.player.x,state.player.y-70,`${state.level+1}단계 ${e.name}`,e.accent);
+  bannerLevel.textContent=`${state.level+1}단계 ${e.name}`; bannerBoost.textContent=`${levelVisual(state.level).stars} · 흡수 점수 x${e.value.toLocaleString()}`;
+  banner.classList.remove('hidden'); setTimeout(()=>banner.classList.add('hidden'),900);
+};
+
+drawAura = function(c,x,y,e){
+  c.save();
+  const pulse=1+Math.sin(state.pulse*3)*.018;
+  const g=c.createRadialGradient(x,y,15,x,y,e.aura);
+  g.addColorStop(0,e.color+'22'); g.addColorStop(.55,e.color+'0b'); g.addColorStop(1,'rgba(255,255,255,0)');
+  c.fillStyle=g; c.beginPath(); c.arc(x,y,e.aura*pulse,0,Math.PI*2); c.fill();
+  c.strokeStyle=e.accent || e.color; c.globalAlpha=.35; c.lineWidth=2; c.setLineDash([10,12]); c.beginPath(); c.arc(x,y,e.aura*pulse,0,Math.PI*2); c.stroke();
+  c.restore();
+};
+
+drawPlayer = function(c,p,e){
+  for(const t of state.player.trail){ c.globalAlpha=Math.max(0,t.life)*.16; drawCharacter(c,t.x,t.y,t.size*.88,e.color,e.accent,state.level,true); }
+  c.globalAlpha=1; drawCharacter(c,p.x,p.y,e.size,e.color,e.accent,state.level,false);
+  const v=levelVisual(state.level);
+  drawStagePlate(c,p.x,p.y-e.size-72,`${v.stars} ${state.level+1}단계 ${e.name}`,`전투력 ${Math.floor(playerPower())}`,e.color);
+};
+
+drawCharacter = function(c,x,y,size,color,accent,level,ghost=false){
+  const v=levelVisual(level);
+  c.save();
+  const bob=Math.sin(state.pulse*5 + x*.01)*1.4;
+  y += bob;
+  c.globalAlpha *= ghost ? .42 : 1;
+  c.fillStyle='rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(x+size*.25,y+size*1.25,size*.92,size*.25,0,0,Math.PI*2); c.fill();
+  if(level>=1){ c.fillStyle=color+'33'; c.beginPath(); c.ellipse(x,y+size*.72,size*(1.05+level*.08),size*.72,0,0,Math.PI*2); c.fill(); }
+  if(level>=2){ c.strokeStyle=accent; c.globalAlpha*=.9; c.lineWidth=Math.max(2,size*.08); c.beginPath(); c.arc(x,y+size*.15,size*(1.02+level*.05),0,Math.PI*2); c.stroke(); }
+  c.globalAlpha = ghost ? .42 : 1;
+  if(level>=3){
+    const cape=c.createLinearGradient(x-size,y-size*.1,x+size,y+size*1.45); cape.addColorStop(0,shade(color,-18)); cape.addColorStop(1,'rgba(40,10,20,.78)');
+    c.fillStyle=cape; c.beginPath(); c.moveTo(x-size*.62,y-size*.05); c.quadraticCurveTo(x-size*1.15,y+size*.75,x-size*.62,y+size*1.65); c.lineTo(x+size*.62,y+size*1.65); c.quadraticCurveTo(x+size*1.15,y+size*.75,x+size*.62,y-size*.05); c.closePath(); c.fill();
+  }
+  const body=c.createLinearGradient(x-size,y-size*.6,x+size,y+size*1.2); body.addColorStop(0,accent); body.addColorStop(.45,color); body.addColorStop(1,shade(color,-35));
+  c.fillStyle=body; roundRect(c,x-size*.48,y+size*.08,size*.96,size*1.08,size*.24); c.fill();
+  c.fillStyle=shade(color,-24); roundRect(c,x-size*.78,y+size*.22,size*.28,size*.82,size*.13); c.fill(); roundRect(c,x+size*.50,y+size*.22,size*.28,size*.82,size*.13); c.fill();
+  c.fillStyle=shade(color,-38); roundRect(c,x-size*.38,y+size*1.03,size*.26,size*.58,size*.12); c.fill(); roundRect(c,x+size*.12,y+size*1.03,size*.26,size*.58,size*.12); c.fill();
+  c.fillStyle=body; c.beginPath(); c.arc(x,y-size*.36,size*.48,0,Math.PI*2); c.fill();
+  c.fillStyle='rgba(255,255,255,.55)'; c.beginPath(); c.arc(x-size*.16,y-size*.48,size*.08,0,Math.PI*2); c.arc(x+size*.16,y-size*.48,size*.08,0,Math.PI*2); c.fill();
+  if(level===1) drawHelmet(c,x,y-size*.72,size*.82,accent);
+  if(level>=2 && level<4) drawCrown(c,x,y-size*.96,size*.62,accent,level);
+  if(level>=4) drawCrown(c,x,y-size*1.04,size*.78,'#ffd36a',level);
+  if(level>=5){ c.strokeStyle='#fff7c8'; c.lineWidth=2; for(let i=0;i<4;i++){ const a=state.pulse+i*Math.PI/2; c.beginPath(); c.arc(x+Math.cos(a)*size*1.1,y+Math.sin(a)*size*.72,size*.08,0,Math.PI*2); c.stroke(); } }
+  c.fillStyle='rgba(2,8,16,.72)'; roundRect(c,x-size*.9,y+size*1.68,size*1.8,size*.34,size*.17); c.fill();
+  c.fillStyle=accent; c.textAlign='center'; c.textBaseline='middle'; c.font=`900 ${Math.max(10,size*.32)}px system-ui`; c.fillText(v.icon,x,y+size*1.86);
+  c.restore();
+};
+
+drawEnemy = function(c,o){
+  if(!inView(o.x,o.y,160)) return;
+  const e=evolutions[o.level], v=levelVisual(o.level), stronger=enemyPower(o)>playerPower();
+  for(const t of o.trail){ c.globalAlpha=Math.max(0,t.life)*.12; drawCharacter(c,t.x,t.y,t.size*.72,e.color,e.accent,o.level,true); }
+  c.globalAlpha=1;
+  drawCharacter(c,o.x,o.y,e.size*.82,e.color,e.accent,o.level,false);
+  const labelColor = stronger ? '#ff6377' : '#62e6a7';
+  drawStagePlate(c,o.x,o.y-e.size-58,`${stronger?'위험':'약함'} ${v.stars}`,`${o.level+1}단계 · ${Math.floor(enemyPower(o))}`,labelColor);
+};
+
+drawCitizen = function(c,o){
+  if(!inView(o.x,o.y,120)) return;
+  c.save(); const y=o.y+Math.sin(o.bob)*2;
+  c.fillStyle='rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(o.x,y+o.r*1.28,o.r*1.1,o.r*.30,0,0,Math.PI*2); c.fill();
+  if(o.tier>1){ c.strokeStyle=o.color; c.globalAlpha=.38; c.lineWidth=2; c.beginPath(); c.arc(o.x,y,o.r*2.1,0,Math.PI*2); c.stroke(); c.globalAlpha=1; }
+  const grad=c.createLinearGradient(o.x-o.r,y-o.r*1.2,o.x+o.r,y+o.r*1.4); grad.addColorStop(0,o.outline); grad.addColorStop(.48,o.color); grad.addColorStop(1,shade(o.color,-36));
+  c.fillStyle=grad; roundRect(c,o.x-o.r*.48,y-o.r*.05,o.r*.96,o.r*1.28,o.r*.28); c.fill();
+  c.beginPath(); c.arc(o.x,y-o.r*.68,o.r*.50,0,Math.PI*2); c.fill();
+  if(o.tier>1){ c.fillStyle='#ffd36a'; c.beginPath(); c.moveTo(o.x-o.r*.55,y-o.r*1.35); c.lineTo(o.x,y-o.r*1.85); c.lineTo(o.x+o.r*.55,y-o.r*1.35); c.closePath(); c.fill(); drawNameplate(c,o.x,y-o.r*2.55,`강자 ${o.strength}`,o.color); }
+  c.restore();
+};
+
+drawMiniMap = function(c){
+  const w=Math.min(170, VIEW.w*.22), h=Math.min(120, VIEW.h*.18), x=VIEW.w-w-18, y=18;
+  c.save(); c.fillStyle='rgba(5,11,20,.76)'; roundRect(c,x,y,w,h,16); c.fill(); c.strokeStyle='rgba(255,255,255,.22)'; c.stroke();
+  c.fillStyle='rgba(255,255,255,.16)'; for(const b of buildings){ c.fillRect(x+b.x/WORLD.w*w,y+b.y/WORLD.h*h,Math.max(2,b.w/WORLD.w*w),Math.max(2,b.h/WORLD.h*h)); }
+  c.strokeStyle='rgba(255,255,255,.85)'; c.strokeRect(x+state.camera.x/WORLD.w*w,y+state.camera.y/WORLD.h*h,VIEW.w/WORLD.w*w,VIEW.h/WORLD.h*h);
+  c.fillStyle='#d7d3c9'; for(let i=0;i<state.citizens.length;i+=8){ const z=state.citizens[i]; c.fillRect(x+z.x/WORLD.w*w,y+z.y/WORLD.h*h,2,2); }
+  for(const en of state.enemies){ c.fillStyle=enemyPower(en)>playerPower()?'#ff6377':'#62e6a7'; c.beginPath(); c.arc(x+en.x/WORLD.w*w,y+en.y/WORLD.h*h,3,0,Math.PI*2); c.fill(); }
+  c.fillStyle=evolutions[state.level].color; c.beginPath(); c.arc(x+state.player.x/WORLD.w*w,y+state.player.y/WORLD.h*h,4,0,Math.PI*2); c.fill(); c.restore();
+};
+
+drawBuilding = function(c,b){
+  if(!inView(b.x+b.w/2,b.y+b.h/2,280)) return;
+  c.save(); const x=b.x,y=b.y,w=b.w,h=b.h;
+  c.fillStyle='rgba(0,0,0,.34)'; c.beginPath(); c.ellipse(x+w*.55,y+h*.98,w*.66,h*.20,0,0,Math.PI*2); c.fill();
+  const wall=c.createLinearGradient(x,y+h*.22,x+w+32,y+h); wall.addColorStop(0,'#d2a66a'); wall.addColorStop(.52,b.wall); wall.addColorStop(1,'#604027');
+  c.fillStyle=wall; roundRect(c,x,y+h*.33,w,h*.66,10); c.fill();
+  c.fillStyle=shade(b.wall,-28); c.beginPath(); c.moveTo(x+w,y+h*.33); c.lineTo(x+w+34,y+h*.18); c.lineTo(x+w+34,y+h*.83); c.lineTo(x+w,y+h*.99); c.closePath(); c.fill();
+  const roof=c.createLinearGradient(x,y-34,x+w,y+h*.38); roof.addColorStop(0,'#8a4b25'); roof.addColorStop(.55,b.roof); roof.addColorStop(1,'#2d1810');
+  c.fillStyle=roof; c.beginPath(); c.moveTo(x-24,y+h*.36); c.lineTo(x+w*.50,y-38); c.lineTo(x+w+30,y+h*.36); c.closePath(); c.fill();
+  c.fillStyle='rgba(255,255,255,.12)'; c.beginPath(); c.moveTo(x+w*.50,y-38); c.lineTo(x+w+30,y+h*.36); c.lineTo(x+w*.55,y+h*.25); c.closePath(); c.fill();
+  c.fillStyle='rgba(255,222,132,.9)'; for(let i=.18;i<.82;i+=.22){ roundRect(c,x+w*i,y+h*.56,w*.12,h*.16,4); c.fill(); }
+  c.strokeStyle='rgba(255,255,255,.16)'; c.lineWidth=2; c.stroke();
+  c.restore();
+};
+
+if(document.body.classList.contains('playing-mode')) requestAnimationFrame(fitGameCanvas);
