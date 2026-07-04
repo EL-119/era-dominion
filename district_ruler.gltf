@@ -4,15 +4,15 @@
     "generator": "Era Dominion procedural premium character builder"
   },
   "eraDominionModel": {
-    "tier": 6,
-    "key": "city_emperor",
-    "name": "도시의 황제",
-    "color": "#fff4d6",
+    "tier": 1,
+    "key": "citizen_leader",
+    "name": "시민 리더",
+    "color": "#3b82f6",
     "parts": [
-      "white_gold_robe",
-      "imperial_crown",
-      "double_cape",
-      "emperor_sword"
+      "cloth_tunic",
+      "hair",
+      "boots",
+      "short_sword"
     ],
     "note": "This lightweight GLTF descriptor is used by assets/premium_leaders.js to build an in-game Three.js character model."
   }
