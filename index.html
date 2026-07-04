@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Era Dominion 3D - Reborn v18 16 Direction Leader</title>
+  <title>Era Dominion 3D - Reborn v19 Real 3D GLB Leader</title>
   <style>
     :root{--bg:#090b13;--panel:rgba(10,12,22,.74);--line:rgba(255,255,255,.14);--txt:#f5f7ff;--muted:#aeb7d7;--gold:#ffd36a;--red:#ff657a;--blue:#72a7ff;--green:#63e6a2;}
     *{box-sizing:border-box} html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05060b;color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,Pretendard,Apple SD Gothic Neo,Noto Sans KR,sans-serif;}
@@ -229,8 +229,103 @@ function makePremiumLeaderModel(stage,isEnemy=false){
  return root;
 }
 
+
+const REAL_LEADER_GLB_URL='https://threejs.org/examples/models/gltf/Soldier.glb';
+let realLeaderPromise=null, realLeaderAsset=null;
+async function loadRealLeaderAsset(){
+ if(realLeaderAsset)return realLeaderAsset;
+ if(realLeaderPromise)return realLeaderPromise;
+ realLeaderPromise=(async()=>{
+   const mod=await import('https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js');
+   const loader=new mod.GLTFLoader();
+   const gltf=await new Promise((resolve,reject)=>loader.load(REAL_LEADER_GLB_URL,resolve,undefined,reject));
+   realLeaderAsset=gltf;
+   return gltf;
+ })();
+ return realLeaderPromise;
+}
+function cloneRealLeaderScene(src){
+ const c=src.clone(true);
+ c.traverse(o=>{
+   if(o.isMesh){
+     o.castShadow=true; o.receiveShadow=true;
+     if(o.material)o.material=o.material.clone();
+   }
+ });
+ return c;
+}
+function add3DLeaderEquipment(root,stage,isEnemy){
+ const accent=gem(isEnemy?0xff3554:0x53c7ff), gold=polishedMat(0xffd26b,.22,.65), steel=polishedMat(0xd8e6f5,.30,.55), capeMat=polishedMat(isEnemy?0x7a1d2f:0x243c9c,.62,.08);
+ const add=(g,m,pos,rot=[0,0,0],scale=[1,1,1])=>addPart(root,g,m,pos,rot,scale);
+ // base ring and readable fantasy gear layered onto the real humanoid GLB
+ const aura=add(new THREE.RingGeometry(.86+stage*.07,.96+stage*.07,64),accent,[0,.035,0],[-Math.PI/2,0,0]);
+ aura.castShadow=false; aura.receiveShadow=false;
+ if(stage>=1){
+   add(new THREE.BoxGeometry(.07,.95,.045),gold,[.72,1.10,.26],[0,0,-.50]);
+   add(new THREE.BoxGeometry(.12,.52,.035),steel,[.94,1.48,.32],[0,0,-.50]);
+   add(new THREE.SphereGeometry(.18,24,16),steel,[-.56,1.12,.20],[0,0,0],[.78,1.15,.18]);
+ }
+ if(stage>=2){
+   add(new THREE.SphereGeometry(.24,24,14),steel,[-.38,1.52,.04],[0,0,.2],[1.25,.55,1]);
+   add(new THREE.SphereGeometry(.24,24,14),steel,[.38,1.52,.04],[0,0,-.2],[1.25,.55,1]);
+   add(new THREE.TorusGeometry(.27,.018,8,42),gold,[0,1.78,.06],[Math.PI/2,0,0]);
+ }
+ if(stage>=3){
+   add(new THREE.BoxGeometry(.68,1.05,.035),capeMat,[0,.98,-.25],[.03,0,0]);
+   add(new THREE.TorusGeometry(.48,.022,8,56),accent,[0,1.36,.24],[Math.PI/2,0,0]);
+ }
+ if(stage>=4){
+   add(new THREE.TorusGeometry(.26,.028,8,48),gold,[0,2.10,.02],[Math.PI/2,0,0]);
+   for(let i=0;i<7;i++){const a=i/7*Math.PI*2;add(new THREE.ConeGeometry(.035,.16,10),gold,[Math.cos(a)*.21,2.20,Math.sin(a)*.21],[0,0,0]);}
+ }
+ if(stage>=5){
+   add(new THREE.ConeGeometry(.10,.38,18),accent,[0,2.42,.02]);
+   add(new THREE.TorusGeometry(.92,.025,8,80),gold,[0,.05,0],[Math.PI/2,0,0]);
+ }
+}
+function tintRealLeader(model,stage,isEnemy){
+ const stageColors=[0x4a8f4b,0x357c4f,0x2e6f52,0x212638,0xf2e7d0,0x532071];
+ model.traverse(o=>{
+   if(o.isMesh&&o.material){
+     const m=o.material;
+     if(m.color){
+       if(isEnemy)m.color.lerp(new THREE.Color(0x8f1f35),.38);
+       else m.color.lerp(new THREE.Color(stageColors[stage]||0x4a8f4b),.26);
+     }
+     m.metalness=Math.min(.55,(m.metalness||0)+.16);
+     m.roughness=Math.max(.28,(m.roughness||.55)-.08);
+   }
+ });
+}
+function attachReal3DLeader(root,stage,isEnemy){
+ loadRealLeaderAsset().then(gltf=>{
+   const model=cloneRealLeaderScene(gltf.scene);
+   tintRealLeader(model,stage,isEnemy);
+   model.scale.setScalar(.95+stage*.045);
+   model.position.set(0,.02,0);
+   model.rotation.y=Math.PI;
+   // remove placeholder except equipment/ring remains okay; clear old placeholder tagged.
+   root.children.filter(c=>c.userData.placeholder).forEach(c=>root.remove(c));
+   root.add(model);
+   root.userData.real3DLoaded=true;
+ }).catch(e=>{console.warn('Real 3D leader model load failed; fallback remains.',e);});
+}
+
+
 function makeLeaderModel(stage,isEnemy=false){
- return makePremiumLeaderModel(stage,isEnemy);
+ const root=new THREE.Group();
+ // instant placeholder so the game never freezes while the real GLB loads
+ const placeholder=new THREE.Group(); placeholder.userData.placeholder=true;
+ const skin=mat(isEnemy?0xd18c70:0xf0bd98,.58,.02), cloth=mat(isEnemy?0x6d1830:0x2e6f52,.55,.10), dark=mat(0x121621,.52,.18);
+ addPart(placeholder,new THREE.CapsuleGeometry(.24,.82,16,18),cloth,[0,1.00,0]);
+ addPart(placeholder,new THREE.SphereGeometry(.21,24,16),skin,[0,1.56,.03]);
+ addPart(placeholder,new THREE.CapsuleGeometry(.08,.46,12,12),dark,[-.15,.42,.02]);
+ addPart(placeholder,new THREE.CapsuleGeometry(.08,.46,12,12),dark,[.15,.42,.02]);
+ root.add(placeholder);
+ add3DLeaderEquipment(root,stage,isEnemy);
+ attachReal3DLeader(root,stage,isEnemy);
+ root.userData.modelQuality='v19-real-3d-remote-glb-humanoid-leader';
+ return root;
 }
 
 function makeNpc(){
