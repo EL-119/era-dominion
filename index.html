@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Era Dominion 3D - Reborn v5</title>
+  <title>Era Dominion 3D - Reborn v7</title>
   <style>
     :root{--bg:#090b13;--panel:rgba(10,12,22,.74);--line:rgba(255,255,255,.14);--txt:#f5f7ff;--muted:#aeb7d7;--gold:#ffd36a;--red:#ff657a;--blue:#72a7ff;--green:#63e6a2;}
     *{box-sizing:border-box} html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05060b;color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,Pretendard,Apple SD Gothic Neo,Noto Sans KR,sans-serif;}
@@ -21,7 +21,7 @@
 <body>
 <div id="game"></div>
 <div id="loading" class="loading"><div>왕국 생성 중<div class="bar"><span></span></div></div></div>
-<div id="menu" class="screen"><div class="card"><h1>ERA DOMINION</h1><p class="subtitle">이전 3D 카메라 시점을 유지하고, 리더 캐릭터를 고해상도 절차형 3D 판타지 모델로 다시 만든 버전입니다.</p><div class="row"><button id="startBtn" class="btn">게임 시작</button><button id="howBtn" class="btn secondary">조작 보기</button></div><p class="small">이동: <span class="kbd">WASD</span> 또는 방향키 · 일시정지: <span class="kbd">Esc</span> / <span class="kbd">P</span><br>플레이어와 적 리더만 흡수 성장합니다. 일반 NPC끼리는 서로 흡수하지 않습니다.</p></div></div>
+<div id="menu" class="screen"><div class="card"><h1>ERA DOMINION</h1><p class="subtitle">이전 3D 카메라 시점은 유지하고, 리더 캐릭터를 단일 HTML 내장형 사람형 3D 메시 스타일로 다시 만든 버전입니다.</p><div class="row"><button id="startBtn" class="btn">게임 시작</button><button id="howBtn" class="btn secondary">조작 보기</button></div><p class="small">이동: <span class="kbd">WASD</span> 또는 방향키 · 일시정지: <span class="kbd">Esc</span> / <span class="kbd">P</span><br>플레이어와 적 리더만 흡수 성장합니다. 일반 NPC끼리는 서로 흡수하지 않습니다.</p></div></div>
 <div id="help" class="screen hidden"><div class="card"><h1 style="font-size:44px">조작 안내</h1><p class="subtitle">약한 NPC와 약한 적 리더에게 가까이 가면 자동으로 흡수합니다. 강한 적에게 닿으면 피해를 입습니다. 리더 단계가 오를수록 외형이 확실하게 바뀝니다.</p><div class="row"><button id="backBtn" class="btn">돌아가기</button></div></div></div>
 <div id="pause" class="screen hidden"><div class="card"><h1 style="font-size:48px">일시정지</h1><p class="subtitle">게임을 계속하거나 처음부터 다시 시작할 수 있습니다.</p><div class="row"><button id="resumeBtn" class="btn">계속하기</button><button id="restartBtn" class="btn secondary">다시하기</button></div></div></div>
 <div id="over" class="screen hidden"><div class="card"><h1 style="font-size:48px">게임 오버</h1><p id="overText" class="subtitle"></p><div class="row"><button id="againBtn" class="btn">다시하기</button></div></div></div>
@@ -78,100 +78,114 @@ function polishLeaderModel(root,stage,isEnemy){
  root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.geometry&&stage>=1)addEdgesTo(o);}});
 }
 
+
+function humanizeLeader(root,stage,isEnemy){
+ const skin=mat(isEnemy?0xd78f72:0xf0bd98,.58,.02), faceShadow=mat(0x3a2020,.65,.02);
+ const tunic=mat(isEnemy?0x4a1725:0x18385d,.62,.06), boot=mat(0x171b25,.5,.2);
+ const add=(g,m,p,r=[0,0,0],sc=[1,1,1])=>addPart(root,g,m,p,r,sc);
+ // human waist and chest: tapered torso, distinct neck and hips
+ add(new THREE.CylinderGeometry(.34,.25,.34,18),tunic,[0,1.12,.02]);
+ add(new THREE.CylinderGeometry(.42,.32,.48,18),tunic,[0,1.43,.02]);
+ add(new THREE.CylinderGeometry(.13,.14,.16,16),skin,[0,1.84,.02]);
+ // ears, nose, brows, eyes and mouth: visible human face
+ add(new THREE.SphereGeometry(.065,12,8),skin,[-.34,2.11,.02],[0,0,0],[.55,1,.7]);
+ add(new THREE.SphereGeometry(.065,12,8),skin,[.34,2.11,.02],[0,0,0],[.55,1,.7]);
+ add(new THREE.ConeGeometry(.055,.11,10),skin,[0,2.10,.345],[Math.PI/2,0,0]);
+ for(const x of [-.13,.13]){
+   add(new THREE.SphereGeometry(.034,12,8),faceShadow,[x,2.17,.337]);
+   add(new THREE.BoxGeometry(.13,.022,.025),faceShadow,[x,2.27,.33],[0,0,x*.8]);
+ }
+ add(new THREE.TorusGeometry(.075,.012,6,14),faceShadow,[0,2.00,.337],[0,0,0],[1,.42,1]);
+ // articulated elbows and hands; breaks the toy-cylinder read
+ for(const x of [-1,1]){
+   add(new THREE.SphereGeometry(.105,14,10),skin,[x*.84,.96,.12]);
+   for(let f=-1;f<=1;f++) add(new THREE.CapsuleGeometry(.018,.09,5,7),skin,[x*(.84+f*.022),.87,.20],[.55,0,0]);
+ }
+ // feet with heel/toe profile
+ for(const x of [-.22,.22]) add(new THREE.BoxGeometry(.26,.12,.48),boot,[x,.12,.12]);
+ root.userData.humanoid='anatomical-proportions-v6';
+}
+
+
 function makeLeaderModel(stage,isEnemy=false){
  const root=new THREE.Group();
- const c=colors[stage];
- const skin=mat(isEnemy?0xffb18b:0xffd3ad,.55,.03);
- const cloth=mat(c,.55,.08);
- const cloth2=mat(isEnemy?0x3b1020:0x13294b,.6,.05);
- const leather=mat(isEnemy?0x2b1510:0x2a1a12,.65,.05);
- const black=mat(0x080a10,.55,.18);
- const steel=mat(stage>=2?0xd6e3f2:0x7d8da3,.34,.52);
- const darkSteel=mat(0x3b465d,.38,.36);
- const gold=mat(0xffd46b,.28,.62);
- const trim=mat(isEnemy?0xff4664:0x65b8ff,.25,.25);
- const hairColor=[0x3a2316,0x72401f,0xd7bc7a,0x171719,0x6d35d7,0xf3f4ff][stage];
- const hair=mat(hairColor,.62,.04);
- const glow=gem(isEnemy?0xff3044:0x5cc8ff);
- const add=(g,m,pos,rot=[0,0,0],scale=[1,1,1])=>addPart(root,g,m,pos,rot,scale);
- const s=1.22+stage*.075;
- root.scale.setScalar(s);
- // legs, boots
- add(new THREE.CapsuleGeometry(.16,.64,10,16),leather,[-.22,.52,.02],[0,0,.04]);
- add(new THREE.CapsuleGeometry(.16,.64,10,16),leather,[.22,.52,.02],[0,0,-.04]);
- add(new THREE.BoxGeometry(.36,.16,.58),black,[-.22,.13,.10]);
- add(new THREE.BoxGeometry(.36,.16,.58),black,[.22,.13,.10]);
- add(new THREE.CylinderGeometry(.17,.2,.12,18),steel,[-.22,.82,.02]);
- add(new THREE.CylinderGeometry(.17,.2,.12,18),steel,[.22,.82,.02]);
- // body silhouette
- add(new THREE.CapsuleGeometry(.46,.78,18,26),cloth,[0,1.22,0]);
- add(new THREE.BoxGeometry(1.05,.18,.34),steel,[0,1.67,.03]);
- add(new THREE.BoxGeometry(.76,.44,.26),stage>=2?steel:cloth2,[0,1.42,.25]);
- add(new THREE.BoxGeometry(.64,.16,.30),gold,[0,1.16,.31]);
- add(new THREE.SphereGeometry(.075,16,10),glow,[0,1.45,.42]);
- // pauldrons
- add(new THREE.SphereGeometry(.22,18,10),steel,[-.56,1.62,.02],[0,0,.25],[1.35,.62,1.0]);
- add(new THREE.SphereGeometry(.22,18,10),steel,[.56,1.62,.02],[0,0,-.25],[1.35,.62,1.0]);
- // arms with gloves
- add(new THREE.CapsuleGeometry(.12,.58,10,16),skin,[-.65,1.22,.03],[0,0,.33]);
- add(new THREE.CapsuleGeometry(.12,.58,10,16),skin,[.65,1.22,.03],[0,0,-.33]);
- add(new THREE.SphereGeometry(.13,14,10),skin,[-.84,.93,.10]);
- add(new THREE.SphereGeometry(.13,14,10),skin,[.84,.93,.10]);
- add(new THREE.CylinderGeometry(.13,.13,.16,16),darkSteel,[-.76,1.02,.08],[0,0,.33]);
- add(new THREE.CylinderGeometry(.13,.13,.16,16),darkSteel,[.76,1.02,.08],[0,0,-.33]);
- // head and face
- add(new THREE.SphereGeometry(.35,32,22),skin,[0,2.12,.03],[0,0,0],[.95,1.08,.9]);
- add(new THREE.SphereGeometry(.055,16,10),glow,[-.12,2.15,.34]);
- add(new THREE.SphereGeometry(.055,16,10),glow,[.12,2.15,.34]);
- add(new THREE.BoxGeometry(.15,.025,.018),black,[-.12,2.25,.35],[0,0,-.16]);
- add(new THREE.BoxGeometry(.15,.025,.018),black,[.12,2.25,.35],[0,0,.16]);
- add(new THREE.ConeGeometry(.045,.15,10),skin,[0,2.08,.39],[Math.PI/2,0,0]);
- add(new THREE.BoxGeometry(.18,.025,.025),mat(0x7a302a,.6,.02),[0,1.94,.36]);
- // hair: cap + side locks + back volume
- add(new THREE.SphereGeometry(.37,30,16),hair,[0,2.32,-.03],[0,0,0],[1.08,.58,1.02]);
- add(new THREE.CapsuleGeometry(.055,.32,8,10),hair,[-.31,2.14,.08],[.1,0,.08]);
- add(new THREE.CapsuleGeometry(.055,.32,8,10),hair,[.31,2.14,.08],[.1,0,-.08]);
- add(new THREE.SphereGeometry(.22,18,12),hair,[0,2.19,-.28],[0,0,0],[1.25,1.15,.72]);
- // stage equipment
+ const palette={
+  skin:isEnemy?0xd89572:0xf0bd9b,
+  hair:[0x2d1b12,0x6c3b1d,0xd2ad63,0x15151a,0x4830a0,0xf1f3ff][stage],
+  cloth:isEnemy?0x451625:[0x315a7c,0x306b42,0x5c416e,0x41326f,0x574112,0xefe6d2][stage],
+  cloth2:isEnemy?0x250912:0x152642,
+  metal:stage>=2?0xd7e4f2:0x8090aa,
+  dark:0x101521,
+  gold:0xffd46b,
+  accent:isEnemy?0xff3f5f:0x61c7ff,
+  cape:isEnemy?0x791832:0x263f9f
+ };
+ const M={skin:mat(palette.skin,.58,.02),hair:mat(palette.hair,.68,.04),cloth:mat(palette.cloth,.6,.08),cloth2:mat(palette.cloth2,.65,.06),metal:polishedMat(palette.metal,.32,.48),dark:mat(palette.dark,.52,.16),gold:polishedMat(palette.gold,.26,.64),accent:gem(palette.accent),cape:mat(palette.cape,.66,.04)};
+ const add=(g,m,p,r=[0,0,0],sc=[1,1,1])=>addPart(root,g,m,p,r,sc);
+ const limb=(name,x,y,z,len,top,bottom,rot,material)=>{const o=add(new THREE.CylinderGeometry(top,bottom,len,18,3),material,[x,y,z],rot);o.name=name;return o;};
+ const ell=(name,r,matr,p,sc=[1,1,1],rot=[0,0,0])=>{const o=add(new THREE.SphereGeometry(r,32,20),matr,p,rot,sc);o.name=name;return o;};
+ const box=(name,w,h,d,matr,p,rot=[0,0,0])=>{const o=add(new THREE.BoxGeometry(w,h,d),matr,p,rot);o.name=name;return o;};
+ const s=1.18+stage*.07; root.scale.setScalar(s);
+ // true humanoid proportions: long legs, narrow waist, wider shoulders, small head
+ limb('left-thigh',-.23,.58,.02,.70,.145,.18,[0,0,.045],M.cloth2);
+ limb('right-thigh',.23,.58,.02,.70,.145,.18,[0,0,-.045],M.cloth2);
+ limb('left-shin',-.24,.18,.04,.58,.115,.145,[0,0,-.025],M.dark);
+ limb('right-shin',.24,.18,.04,.58,.115,.145,[0,0,.025],M.dark);
+ box('left-foot',.28,.13,.50,M.dark,[-.25,.03,.15]); box('right-foot',.28,.13,.50,M.dark,[.25,.03,.15]);
+ ell('hips',.34,M.cloth,[0,.91,.02],[1.08,.55,.78]);
+ limb('waist',0,1.13,.02,.38,.25,.34,[0,0,0],M.cloth);
+ limb('ribcage',0,1.43,.03,.58,.43,.30,[0,0,0],stage>=2?M.metal:M.cloth);
+ ell('chest-highlight',.18,M.accent,[0,1.49,.38],[.75,.38,.18]);
+ box('shoulder-line',1.10,.16,.32,M.metal,[0,1.75,.03]);
+ ell('left-shoulder',.19,M.metal,[-.62,1.71,.04],[1.25,.72,1]); ell('right-shoulder',.19,M.metal,[.62,1.71,.04],[1.25,.72,1]);
+ limb('left-upper-arm',-.72,1.38,.08,.55,.105,.13,[0,0,.32],stage>=2?M.metal:M.cloth2);
+ limb('right-upper-arm',.72,1.38,.08,.55,.105,.13,[0,0,-.32],stage>=2?M.metal:M.cloth2);
+ ell('left-elbow',.095,M.skin,[-.83,1.10,.12],[1,.85,1]); ell('right-elbow',.095,M.skin,[.83,1.10,.12],[1,.85,1]);
+ limb('left-forearm',-.88,.91,.13,.42,.085,.105,[0,0,-.04],M.skin);
+ limb('right-forearm',.88,.91,.13,.42,.085,.105,[0,0,.04],M.skin);
+ ell('left-hand',.095,M.skin,[-.88,.66,.17],[.95,.72,1.15]); ell('right-hand',.095,M.skin,[.88,.66,.17],[.95,.72,1.15]);
+ for(const side of [-1,1]) for(let i=-1;i<=1;i++) limb('finger',side*(.88+i*.025),.58,.24,.105,.012,.017,[1.1,0,0],M.skin);
+ limb('neck',0,1.96,.03,.22,.105,.12,[0,0,0],M.skin);
+ ell('head',.31,M.skin,[0,2.24,.05],[.88,1.08,.80]);
+ ell('left-ear',.045,M.skin,[-.29,2.23,.02],[.50,1.1,.75]); ell('right-ear',.045,M.skin,[.29,2.23,.02],[.50,1.1,.75]);
+ add(new THREE.ConeGeometry(.045,.12,12),M.skin,[0,2.22,.315],[Math.PI/2,0,0]);
+ ell('left-eye',.026,M.dark,[-.095,2.27,.315],[1,.65,.35]); ell('right-eye',.026,M.dark,[.095,2.27,.315],[1,.65,.35]);
+ box('left-brow',.12,.018,.018,M.dark,[-.095,2.36,.305],[0,0,-.16]); box('right-brow',.12,.018,.018,M.dark,[.095,2.36,.305],[0,0,.16]);
+ box('mouth',.14,.016,.018,mat(0x7b342f,.65,.02),[0,2.10,.315]);
+ // hair is sculpted into a cap, bangs and rear volume rather than a ball
+ ell('hair-cap',.33,M.hair,[0,2.43,-.02],[1.04,.43,.86]); ell('back-hair',.23,M.hair,[0,2.27,-.25],[1.12,1.05,.64]);
+ for(let i=-3;i<=3;i++) add(new THREE.ConeGeometry(.045,.28,10),M.hair,[i*.075,2.38,.23],[.65,0,-i*.08]);
+ ell('side-lock-l',.055,M.hair,[-.27,2.19,.12],[.7,1.65,.7]); ell('side-lock-r',.055,M.hair,[.27,2.19,.12],[.7,1.65,.7]);
+ // readable fantasy equipment by stage
  if(stage>=1){
-  add(new THREE.CylinderGeometry(.38,.38,.075,40),mat(isEnemy?0x8b1d2b:0x244fae,.42,.18),[-.82,1.18,.32],[Math.PI/2,0,0]);
-  add(new THREE.TorusGeometry(.38,.026,8,42),gold,[-.82,1.18,.32],[Math.PI/2,0,0]);
-  add(new THREE.BoxGeometry(.14,.14,.09),gold,[-.82,1.18,.39]);
-  add(new THREE.CapsuleGeometry(.045,1.18,10,12),steel,[.92,1.24,.14],[0,0,-.72]);
-  add(new THREE.BoxGeometry(.18,.095,.10),gold,[.67,.91,.15],[0,0,-.72]);
-  add(new THREE.ConeGeometry(.105,.34,16),steel,[1.18,1.72,.14],[0,0,-.72]);
+  add(new THREE.CylinderGeometry(.34,.34,.075,44),isEnemy?mat(0x8f2135,.45,.18):mat(0x2455b3,.45,.18),[-.95,1.15,.27],[Math.PI/2,0,0]);
+  add(new THREE.TorusGeometry(.34,.025,8,44),M.gold,[-.95,1.15,.27],[Math.PI/2,0,0]); box('shield-boss',.13,.13,.07,M.gold,[-.95,1.15,.335]);
+  limb('sword-blade',.99,1.19,.13,1.05,.028,.045,[0,0,-.65],M.metal); box('sword-guard',.22,.07,.07,M.gold,[.75,.84,.15],[0,0,-.65]); add(new THREE.ConeGeometry(.07,.25,16),M.metal,[1.25,1.62,.12],[0,0,-.65]);
  }
  if(stage>=2){
-  add(new THREE.CylinderGeometry(.35,.41,.30,28),steel,[0,2.34,0]);
-  add(new THREE.ConeGeometry(.43,.28,28),steel,[0,2.58,0]);
-  add(new THREE.BoxGeometry(.12,.36,.04),gold,[0,2.42,.37]);
-  add(new THREE.CylinderGeometry(.18,.18,.10,20),gold,[0,1.84,.36],[Math.PI/2,0,0]);
+  add(new THREE.CylinderGeometry(.30,.34,.24,32),M.metal,[0,2.45,.0]); add(new THREE.ConeGeometry(.35,.22,32),M.metal,[0,2.64,0]); box('visor',.34,.05,.045,M.dark,[0,2.42,.32]);
+  box('belt',.72,.10,.26,M.gold,[0,1.12,.31]);
  }
  if(stage>=3){
-  const cape=add(new THREE.PlaneGeometry(1.55,2.15,4,6),mat(isEnemy?0x7b1730:0x253f9b,.66,.04),[0,1.06,-.47],[-.15,0,0]);
-  cape.castShadow=false; cape.receiveShadow=true;
-  add(new THREE.BoxGeometry(1.18,.16,.20),gold,[0,1.82,.32]);
-  add(new THREE.SphereGeometry(.085,18,12),glow,[0,1.84,.44]);
-  add(new THREE.TorusGeometry(.45,.022,8,36),trim,[0,1.50,.34],[Math.PI/2,0,0]);
+  const cape=add(new THREE.PlaneGeometry(1.36,2.10,4,6),M.cape,[0,1.05,-.43],[-.10,0,0]); cape.castShadow=false; cape.receiveShadow=true;
+  box('cape-clasp',.36,.12,.08,M.gold,[0,1.79,.35]); ell('gem',.07,M.accent,[0,1.81,.42]);
  }
  if(stage>=4){
-  add(new THREE.TorusGeometry(.29,.035,10,40),gold,[0,2.54,0],[Math.PI/2,0,0]);
-  for(let i=0;i<7;i++){const a=i/7*Math.PI*2;add(new THREE.ConeGeometry(.065,.27,10),gold,[Math.cos(a)*.27,2.66,Math.sin(a)*.27]);}
-  add(new THREE.SphereGeometry(.065,16,12),gem(isEnemy?0xff263e:0x69d0ff),[0,2.79,0]);
+  add(new THREE.TorusGeometry(.29,.033,10,44),M.gold,[0,2.63,0],[Math.PI/2,0,0]);
+  for(let i=0;i<7;i++){const a=i/7*Math.PI*2;add(new THREE.ConeGeometry(.055,.23,10),M.gold,[Math.cos(a)*.26,2.75,Math.sin(a)*.26]);}
+  ell('crown-jewel',.055,M.accent,[0,2.86,0]);
  }
  if(stage>=5){
-  add(new THREE.CapsuleGeometry(.56,1.08,22,28),mat(isEnemy?0x68101b:0xf8f5ea,.48,.16),[0,1.20,0],[0,0,0],[1.06,1.06,1.06]);
-  add(new THREE.TorusGeometry(.54,.035,8,56),gold,[0,1.37,.31],[Math.PI/2,0,0]);
-  add(new THREE.TorusGeometry(.46,.026,8,44),gold,[0,1.03,.31],[Math.PI/2,0,0]);
-  for(let i=-2;i<=2;i++)add(new THREE.SphereGeometry(.045,12,8),gem(isEnemy?0xff334b:0x7ce3ff),[i*.18,1.53,.42]);
-  add(new THREE.SphereGeometry(.16,18,12),gem(isEnemy?0xff253e:0xffe27a),[0,2.88,0]);
+  ell('royal-robe',.46,mat(isEnemy?0x6e1020:0xf5ecda,.52,.12),[0,1.20,.0],[1.02,1.36,.82]);
+  add(new THREE.TorusGeometry(.54,.026,8,60),M.gold,[0,1.42,.30],[Math.PI/2,0,0]); add(new THREE.TorusGeometry(.42,.020,8,44),M.gold,[0,1.08,.31],[Math.PI/2,0,0]);
+  ell('imperial-orb',.13,M.accent,[0,2.97,0]);
  }
- // ground aura and shadow readability
- const aura=add(new THREE.TorusGeometry(.72+stage*.07,.025,8,48),gem(isEnemy?0xff3344:0x58bbff),[0,.045,0],[Math.PI/2,0,0]);
- aura.castShadow=false; aura.receiveShadow=false;
- polishLeaderModel(root,stage,isEnemy);
+ const aura=add(new THREE.TorusGeometry(.72+stage*.07,.022,8,56),M.accent,[0,.025,0],[Math.PI/2,0,0]); aura.castShadow=false; aura.receiveShadow=false;
+ root.userData.modelQuality='v7-embedded-humanoid-mesh-character';
+ root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(stage>=1)addEdgesTo(o,0x04060a);}});
  return root;
 }
+
 function makeNpc(){
  const g=new THREE.Group();
  const hue=[0x8aa0ba,0x9aa66e,0xb58b71,0x758db8,0x7fa98a][Math.floor(Math.random()*5)];
