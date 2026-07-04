@@ -1,6 +1,6 @@
-# Era Dominion 3D - Reborn v9
+# Era Dominion 3D - Reborn v10
 
-- 리더 캐릭터를 Base64 내장 GLB 사람형 모델로 교체
-- GitHub 업로드는 계속 index.html + README.md 두 파일만 사용
-- 일반 NPC는 가벼운 모델 유지
-- 플레이어와 적 리더는 단계별 GLB 모델과 장비가 다르게 표시됨
+- v9 시작 불가 문제 수정
+- GLB 내장 모델 로딩 실패 시에도 게임이 반드시 시작되도록 fallback 처리
+- 리더는 GLB 로딩 성공 시 내장 GLB 사람형 모델 사용
+- GitHub 업로드 파일: index.html, README.md
