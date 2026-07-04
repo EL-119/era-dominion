@@ -1,182 +1,303 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>에라 도미니언 3D</title>
+  <style>
+    :root{
+      --bg:#07111f;--panel:rgba(8,16,30,.82);--panel2:rgba(10,22,42,.92);--line:rgba(150,205,255,.25);
+      --gold:#ffd25b;--blue:#2f8cff;--cyan:#6bf1ff;--red:#ff4f55;--purple:#b15cff;
+      --text:#f6fbff;--muted:#a9bdd5;
+    }
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050b15;color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+    button{font-family:inherit;cursor:pointer;border:0;color:inherit}
+    #app{width:100vw;height:100svh;position:relative;overflow:hidden;background:radial-gradient(circle at top,#17365b 0%,#08111f 42%,#03070d 100%)}
+    .screen{position:absolute;inset:0;display:none;overflow:hidden}.screen.active{display:block}
+    #home{overflow:auto;padding:28px;scroll-behavior:smooth}.home-bg{position:fixed;inset:0;background:linear-gradient(135deg,rgba(12,28,50,.96),rgba(5,9,17,.98)),radial-gradient(circle at 30% 20%,rgba(81,168,255,.24),transparent 35%);pointer-events:none}.home-wrap{position:relative;max-width:1400px;margin:0 auto;display:grid;grid-template-columns:1.08fr .92fr;gap:22px;align-items:stretch}.hero,.panel,.stage-card,.evo-card,.feature-card{border:1px solid var(--line);background:linear-gradient(180deg,rgba(13,28,51,.86),rgba(6,13,25,.86));box-shadow:0 18px 60px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.06);border-radius:18px;backdrop-filter:blur(10px)}
+    .hero{min-height:520px;position:relative;overflow:hidden;padding:34px}.hero:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 55% 55%,rgba(45,140,255,.25),transparent 25%),linear-gradient(155deg,rgba(255,207,90,.12),transparent 45%);}.logo{position:relative;font-weight:1000;font-size:clamp(42px,5vw,82px);letter-spacing:-4px;color:#ffd45e;text-shadow:0 5px 0 #6a3d00,0 12px 24px rgba(0,0,0,.65)}.logo small{display:block;font-size:clamp(18px,2vw,26px);letter-spacing:0;color:white;text-shadow:0 2px 8px #000;margin-top:6px}.hero-art{position:absolute;left:0;right:0;bottom:0;height:68%;background:linear-gradient(to top,rgba(0,0,0,.18),transparent);}.fake-town{position:absolute;inset:auto 4% 7% 4%;height:75%;transform:perspective(900px) rotateX(58deg);transform-origin:50% 80%;border-radius:42px;background:repeating-linear-gradient(45deg,#9a7951 0 34px,#8c6d48 34px 68px);box-shadow:0 40px 70px rgba(0,0,0,.5);overflow:hidden}.fake-town div{position:absolute;border-radius:7px;background:linear-gradient(135deg,#7a4b31,#352219);box-shadow:10px 10px 0 rgba(0,0,0,.25)}.fake-town div:before{content:"";position:absolute;inset:-22px 8px auto 8px;height:28px;background:linear-gradient(135deg,#4f2f22,#1b1110);transform:skewX(-18deg);border-radius:5px}.orb{position:absolute;border-radius:50%;background:linear-gradient(#58a5ff,#0057e7);box-shadow:0 18px 26px rgba(0,0,0,.42)}.orb.gray{background:linear-gradient(#d9d5c9,#77736a)}.orb.gold{background:linear-gradient(#fff1a8,#c48900)}.hero-actions{position:absolute;left:34px;bottom:34px;display:flex;gap:12px;flex-wrap:wrap}.btn{padding:15px 22px;border-radius:14px;background:linear-gradient(180deg,#3f95ff,#0a5be0);font-weight:900;font-size:17px;box-shadow:0 12px 28px rgba(28,104,255,.35),inset 0 1px 0 rgba(255,255,255,.35)}.btn.secondary{background:rgba(255,255,255,.1);border:1px solid var(--line);box-shadow:none}.side{display:flex;flex-direction:column;gap:16px}.panel{padding:24px}.panel h2{margin:0 0 14px;font-size:32px}.evo-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.evo-card{padding:14px 8px;text-align:center;min-height:205px}.evo-title{font-weight:900;font-size:14px}.char-preview{height:92px;margin:10px auto;position:relative}.char-body{position:absolute;left:50%;bottom:5px;transform:translateX(-50%);width:42px;height:58px;border-radius:18px 18px 10px 10px;background:linear-gradient(#3ea0ff,#095ddf);box-shadow:0 0 22px rgba(47,140,255,.6)}.char-body:before{content:"";position:absolute;left:50%;top:-26px;transform:translateX(-50%);width:34px;height:34px;border-radius:50%;background:inherit}.lv2 .char-body{background:linear-gradient(#5cd9ff,#0a63b6)}.lv3 .char-body{background:linear-gradient(#c881ff,#5420b7)}.lv4 .char-body{background:linear-gradient(#ff685e,#9e1d1d)}.lv5 .char-body{background:linear-gradient(#ffe777,#c68500)}.lv6 .char-body{background:linear-gradient(#fff8d6,#b68219);width:52px;height:68px}.crown{position:absolute;left:50%;top:-2px;transform:translateX(-50%);color:#ffd34f;font-size:24px;text-shadow:0 0 12px #ffb000}.stage-strip{position:relative;max-width:1400px;margin:22px auto 0;display:grid;grid-template-columns:repeat(5,1fr);gap:14px}.stage-card{overflow:hidden}.stage-img{height:160px;background:linear-gradient(135deg,#8e7147,#2d5330);position:relative}.stage-card:nth-child(2) .stage-img{background:linear-gradient(135deg,#778c9c,#34405b)}.stage-card:nth-child(3) .stage-img{background:linear-gradient(135deg,#8a5a3d,#2e2e35)}.stage-card:nth-child(4) .stage-img{background:linear-gradient(135deg,#3d6b96,#172334)}.stage-card:nth-child(5) .stage-img{background:linear-gradient(135deg,#6422ab,#062d52)}.stage-img:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.12) 0 8px,transparent 8px 36px)}.stage-card h3{margin:12px 14px 2px}.stage-card p{margin:0 14px 14px;color:var(--muted);font-size:14px;line-height:1.45}
+    #game{background:#05080e}.hud{position:absolute;z-index:20;pointer-events:none}.top-left{top:14px;left:14px;width:min(330px,calc(100vw - 28px));padding:12px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.45)}.avatar{display:flex;gap:12px;align-items:center}.avatar-icon{width:52px;height:52px;border-radius:15px;background:linear-gradient(#56aaff,#005be9);box-shadow:inset 0 2px rgba(255,255,255,.35),0 0 18px rgba(47,140,255,.5);position:relative}.avatar-icon:before{content:"";position:absolute;left:50%;top:6px;transform:translateX(-50%);width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.35)}.bar{height:9px;border-radius:99px;background:#16233b;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2f8cff,#6bf1ff)}.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.stat{background:rgba(0,0,0,.28);padding:8px;border-radius:10px;font-size:13px}.stat b{display:block;font-size:18px;color:white}.top-center{top:14px;left:50%;transform:translateX(-50%);padding:12px 20px;border-radius:16px;background:rgba(3,8,15,.82);border:1px solid var(--line);font-weight:900;font-size:24px}.top-right{right:14px;top:14px;width:250px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px}.rank-title{font-weight:900;margin-bottom:8px}.rank-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#dfeaff}.bottom-tip{left:50%;bottom:18px;transform:translateX(-50%);padding:11px 18px;background:rgba(0,0,0,.62);border:1px solid var(--line);border-radius:999px;font-weight:800;white-space:nowrap}.minimap{right:18px;bottom:18px;width:140px;height:140px;border-radius:50%;background:rgba(2,10,18,.75);border:2px solid rgba(255,219,104,.65);box-shadow:0 12px 30px rgba(0,0,0,.45);overflow:hidden}.minimap canvas{width:100%;height:100%}.joy{position:absolute;left:24px;bottom:28px;width:140px;height:140px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);z-index:30;display:none}.joy:before{content:"";position:absolute;left:50%;top:50%;width:58px;height:58px;transform:translate(-50%,-50%);border-radius:50%;background:rgba(255,255,255,.28);border:1px solid rgba(255,255,255,.45)}.game-menu{position:absolute;z-index:35;left:14px;top:auto;bottom:14px;display:flex;gap:8px}.smallbtn{pointer-events:auto;padding:10px 13px;border-radius:10px;background:rgba(8,16,30,.85);border:1px solid var(--line);font-weight:800}.overlay{position:absolute;inset:0;z-index:60;background:rgba(1,5,12,.76);display:none;align-items:center;justify-content:center;padding:20px}.overlay.show{display:flex}.modal{width:min(560px,92vw);background:linear-gradient(180deg,#122642,#071020);border:1px solid var(--line);border-radius:24px;padding:28px;text-align:center;box-shadow:0 30px 90px rgba(0,0,0,.6)}.modal h2{font-size:42px;margin:0 0 10px;color:var(--gold)}.modal p{color:var(--muted);line-height:1.55}.toast{position:absolute;z-index:50;left:50%;top:22%;transform:translateX(-50%);font-weight:1000;font-size:clamp(34px,6vw,80px);color:#fff6b2;text-shadow:0 0 20px #ffb000,0 8px 0 rgba(80,35,0,.7);opacity:0;pointer-events:none}.toast.show{animation:pop 1.2s ease both}@keyframes pop{0%{opacity:0;transform:translateX(-50%) scale(.7)}20%{opacity:1;transform:translateX(-50%) scale(1.1)}75%{opacity:1}100%{opacity:0;transform:translateX(-50%) scale(1.22)}}
+    canvas#world{display:block;width:100%;height:100%}.hidden{display:none!important}
+    @media(max-width:1000px){#home{padding:14px}.home-wrap{grid-template-columns:1fr}.stage-strip{grid-template-columns:1fr 1fr}.evo-grid{grid-template-columns:repeat(3,1fr)}.top-right{display:none}.bottom-tip{font-size:13px;bottom:170px}.joy{display:block}.game-menu{bottom:auto;top:88px}.minimap{width:108px;height:108px}.top-center{font-size:18px}.hero{min-height:480px}.logo{letter-spacing:-2px}}
+  </style>
+</head>
+<body>
+<div id="app">
+  <section id="home" class="screen active">
+    <div class="home-bg"></div>
+    <div class="home-wrap">
+      <div class="hero">
+        <div class="logo">♛ 에라 도미니언<small>문명의 황제</small></div>
+        <div class="hero-art"><div class="fake-town" id="fakeTown"></div></div>
+        <div class="hero-actions">
+          <button class="btn" id="startBtn">게임 시작하기</button>
+          <button class="btn secondary" data-scroll="evolution">진화 단계 보기</button>
+          <button class="btn secondary" data-scroll="stages">스테이지 보기</button>
+        </div>
+      </div>
+      <div class="side">
+        <div class="panel" id="evolution"><h2>세력을 모아 진화하라</h2><p style="color:var(--muted);line-height:1.55">100명을 모으면 다음 단계로 진화합니다. 단계가 오르면 외형, 별 등급, 흡수 범위, 점수 배율이 달라집니다.</p><div class="evo-grid" id="evoGrid"></div></div>
+        <div class="panel"><h2>게임 방법</h2><p style="color:var(--muted);line-height:1.65">WASD 또는 방향키로 이동하세요. 회색 시민을 흡수하고, 나보다 약한 세력은 잡아먹고, 강한 세력은 피하세요. 건물과 나무는 지나갈 수 없습니다.</p></div>
+      </div>
+    </div>
+    <div class="stage-strip" id="stages"></div>
+  </section>
+  <section id="game" class="screen">
+    <canvas id="world"></canvas>
+    <div class="hud top-left"><div class="avatar"><div class="avatar-icon" id="avatarIcon"></div><div style="flex:1"><b id="levelName">시민 리더</b><div id="levelText" style="color:var(--muted);font-size:13px">Lv.1 ★</div><div class="bar"><i id="evoBar"></i></div></div></div><div class="stats"><div class="stat">세력 수<b id="powerText">1</b></div><div class="stat">흡수 범위<b id="rangeText">8m</b></div><div class="stat">킬 수<b id="killText">0</b></div><div class="stat">점수<b id="scoreText">0</b></div></div></div>
+    <div class="hud top-center" id="timerText">03:00</div>
+    <div class="hud top-right"><div class="rank-title">세력 랭킹</div><div id="rankList"></div></div>
+    <div class="hud bottom-tip" id="tipText">100명을 흡수하면 다음 단계로 진화합니다.</div>
+    <div class="minimap hud"><canvas id="mini"></canvas></div>
+    <div class="joy" id="joy"></div>
+    <div class="game-menu"><button class="smallbtn" id="pauseBtn">일시정지</button><button class="smallbtn" id="restartBtn">다시 시작</button><button class="smallbtn" id="homeBtn">홈으로</button></div>
+    <div class="toast" id="toast">EVOLUTION</div>
+    <div class="overlay" id="gameOver"><div class="modal"><h2 id="overTitle">GAME OVER</h2><p id="overDesc"></p><button class="btn" id="againBtn">다시하기</button><button class="btn secondary" id="goHomeBtn">홈으로</button></div></div>
+  </section>
+</div>
+<script type="module">
+import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+const $=s=>document.querySelector(s);
+const home=$('#home'),game=$('#game'),canvas=$('#world'),mini=$('#mini');
+const fakeTown=$('#fakeTown');
+for(let i=0;i<24;i++){const d=document.createElement('div');d.style.left=(Math.random()*92)+'%';d.style.top=(Math.random()*82+8)+'%';d.style.width=(22+Math.random()*42)+'px';d.style.height=(22+Math.random()*42)+'px';fakeTown.appendChild(d)}
+for(let i=0;i<58;i++){const o=document.createElement('i');o.className='orb '+(i%5?'gray':'');o.style.left=(8+Math.random()*84)+'%';o.style.bottom=(8+Math.random()*52)+'%';o.style.width=o.style.height=(10+Math.random()*16)+'px';$('.hero').appendChild(o)}
+const levels=[
+ {name:'시민 리더',stars:'★',color:0x1673ff,need:100,mult:1,range:7,scale:1,tag:'Lv.1'},
+ {name:'도시 대장',stars:'★★',color:0x25c7ff,need:100,mult:10,range:9,scale:1.15,tag:'Lv.2'},
+ {name:'구역 지배자',stars:'★★★',color:0x8f4dff,need:100,mult:100,range:11,scale:1.32,tag:'Lv.3'},
+ {name:'도시 군주',stars:'★★★★',color:0xff4d43,need:100,mult:1000,range:13,scale:1.52,tag:'Lv.4'},
+ {name:'도시의 왕',stars:'★★★★★',color:0xffc629,need:100,mult:10000,range:16,scale:1.78,tag:'Lv.5'},
+ {name:'도시의 황제',stars:'★★★★★★',color:0xfff1a0,need:99999,mult:100000,range:20,scale:2.05,tag:'Lv.6'}
+];
+$('#evoGrid').innerHTML=levels.map((l,i)=>`<div class="evo-card lv${i+1}"><div class="evo-title">${i+1}단계<br>${l.name}</div><div class="char-preview"><span class="crown">${i>3?'♛':i>1?'♜':''}</span><div class="char-body"></div></div><div style="color:#ffd25b;font-weight:900">${l.stars}</div><div style="font-size:12px;color:var(--muted);margin-top:5px">점수 x${l.mult.toLocaleString()}</div></div>`).join('');
+const stageNames=['고대 마을','중세 왕국','산업 도시','현대 메트로폴리스','미래 도시'];
+$('#stages').innerHTML=stageNames.map((n,i)=>`<div class="stage-card"><div class="stage-img"></div><h3>${i+1}. ${n}</h3><p>${i===0?'작은 마을에서 첫 세력을 키우세요.':'다음 업데이트에서 확장 예정입니다.'}</p></div>`).join('');
+document.querySelectorAll('[data-scroll]').forEach(b=>b.onclick=()=>document.getElementById(b.dataset.scroll).scrollIntoView({behavior:'smooth',block:'center'}));
+$('#startBtn').onclick=()=>startGame();$('#homeBtn').onclick=()=>showHome();$('#goHomeBtn').onclick=()=>showHome();$('#againBtn').onclick=()=>startGame();$('#restartBtn').onclick=()=>startGame();const pauseBtn=$('#pauseBtn');if(pauseBtn)pauseBtn.onclick=()=>togglePause();
+let scene,camera,renderer,clock,player,followers=[],npcs=[],enemies=[],obstacles=[],particles=[],labels=[],keys={},state,animationId,paused=false;
+const worldSize=260;
+function showGame(){home.classList.remove('active');game.classList.add('active');document.body.scrollTop=0;document.documentElement.scrollTop=0;requestAnimationFrame(()=>{resize();canvas?.focus?.()})}
+function showHome(){game.classList.remove('active');home.classList.add('active');cancelAnimationFrame(animationId)}
+function startGame(){showGame();paused=false;keys={};joyVec={x:0,y:0};$('#gameOver').classList.remove('show');const po=document.getElementById('pauseOverlay');if(po)po.style.display='none';const pb=document.getElementById('pauseBtn');if(pb)pb.textContent='일시정지';init3D();}
+function init3D(){paused=false;cancelAnimationFrame(animationId);if(renderer){renderer.dispose();renderer=null;}scene=new THREE.Scene();scene.background=new THREE.Color(0x07111f);scene.fog=new THREE.Fog(0x07111f,110,245);camera=new THREE.PerspectiveCamera(42,1,.1,700);renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.35));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;clock=new THREE.Clock();followers=[];npcs=[];enemies=[];obstacles=[];particles=[];labels=[];state={score:0,kills:0,time:180,over:false};
+ const hemi=new THREE.HemisphereLight(0xbfd8ff,0x47321d,2.2);scene.add(hemi);const sun=new THREE.DirectionalLight(0xffe0a6,3.8);sun.position.set(-45,80,35);sun.castShadow=true;sun.shadow.mapSize.set(4096,4096);sun.shadow.camera.left=-150;sun.shadow.camera.right=150;sun.shadow.camera.top=150;sun.shadow.camera.bottom=-150;scene.add(sun);const rim=new THREE.DirectionalLight(0x85b9ff,1.15);rim.position.set(55,45,-65);scene.add(rim);
+ createGround();createTown();player=createUnit(0,0,0,0,true);player.power=1;player.collected=1;player.score=0;player.level=0;player.speed=26;player.team='player';player.targetPath=[];scene.add(player.group);
+ for(let i=0;i<210;i++) spawnNpc();
+ for(let i=0;i<7;i++) spawnEnemy(i);
+ resize();animate();}
+function createGround(){const g=new THREE.Group();const base=new THREE.Mesh(new THREE.PlaneGeometry(worldSize,worldSize),new THREE.MeshStandardMaterial({color:0x665036,roughness:.96}));base.rotation.x=-Math.PI/2;base.receiveShadow=true;g.add(base);
+ const tileMats=[0x927657,0x82694c,0x725b42,0x9c805e].map(c=>new THREE.MeshStandardMaterial({color:c,roughness:.9}));
+ for(let x=-worldSize/2;x<worldSize/2;x+=6){for(let z=-worldSize/2;z<worldSize/2;z+=6){if(Math.random()<.92){const t=new THREE.Mesh(new THREE.BoxGeometry(5.82,.16,5.82),tileMats[(Math.random()*tileMats.length)|0]);t.position.set(x+3,.02,z+3);t.rotation.y=(Math.random()-.5)*.08;t.receiveShadow=true;g.add(t)}}}
+ const roadMat=new THREE.MeshStandardMaterial({color:0x594532,roughness:.94});
+ const r1=new THREE.Mesh(new THREE.BoxGeometry(worldSize,.2,14),roadMat);r1.position.y=.05;r1.receiveShadow=true;g.add(r1);
+ const r2=new THREE.Mesh(new THREE.BoxGeometry(14,.2,worldSize),roadMat);r2.position.y=.06;r2.receiveShadow=true;g.add(r2);
+ scene.add(g)}
+function createTown(){for(let i=0;i<46;i++){let p=randomPos();if(Math.abs(p.x)<34&&Math.abs(p.z)<34){i--;continue}if(i%5===0)createTree(p.x,p.z);else createHouse(p.x,p.z,9+Math.random()*7,10+Math.random()*8)}createFountain(-40,28);createFountain(46,-36);for(let i=0;i<18;i++){const p=safePos(22);createStall(p.x,p.z)}for(let i=0;i<28;i++){const p=safePos(20);createLamp(p.x,p.z)}for(let x=-worldSize/2;x<=worldSize/2;x+=16){createTree(x,-worldSize/2+6);createTree(x,worldSize/2-6)}for(let z=-worldSize/2;z<=worldSize/2;z+=16){createTree(-worldSize/2+6,z);createTree(worldSize/2-6,z)}}
+function createHouse(x,z,w,d){const h=9+Math.random()*11;const group=new THREE.Group();const wallColor=new THREE.Color().setHSL(.07+Math.random()*.05,.46,.30+Math.random()*.08);const body=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:wallColor,roughness:.72}));body.position.y=h/2;body.castShadow=body.receiveShadow=true;group.add(body);
+ const roof=new THREE.Mesh(new THREE.ConeGeometry(Math.max(w,d)*.86,6,4),new THREE.MeshStandardMaterial({color:Math.random()<.5?0x40241c:0x253b4d,roughness:.78}));roof.position.y=h+3;roof.rotation.y=Math.PI/4;roof.castShadow=true;group.add(roof);
+ const trimMat=new THREE.MeshStandardMaterial({color:0x2b1a13,roughness:.7});for(const sx of [-1,1]){const beam=new THREE.Mesh(new THREE.BoxGeometry(.28,h+.4,.32),trimMat);beam.position.set(sx*w*.43,h/2,d/2+.18);group.add(beam)}
+ const door=new THREE.Mesh(new THREE.BoxGeometry(w*.24,h*.34,.28),new THREE.MeshStandardMaterial({color:0x1d1210}));door.position.set(0,h*.17,d/2+.18);group.add(door);
+ const winMat=new THREE.MeshStandardMaterial({color:0xffc86b,emissive:0xff9b2e,emissiveIntensity:.65,roughness:.35});for(const sx of [-.28,.28]){const win=new THREE.Mesh(new THREE.BoxGeometry(w*.18,h*.16,.22),winMat);win.position.set(sx*w,h*.64,d/2+.24);group.add(win)}
+ const chimney=new THREE.Mesh(new THREE.BoxGeometry(1.2,3,1.2),new THREE.MeshStandardMaterial({color:0x2e2420,roughness:.8}));chimney.position.set(w*.22,h+4,d*.12);chimney.castShadow=true;group.add(chimney);
+ group.position.set(x,0,z);group.rotation.y=(Math.random()-.5)*.2;scene.add(group);obstacles.push({x,z,r:Math.max(w,d)*.48+.55})}
+function createTree(x,z){const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.8,1.1,5,8),new THREE.MeshStandardMaterial({color:0x573820}));trunk.position.set(x,2.5,z);trunk.castShadow=true;scene.add(trunk);const crown=new THREE.Mesh(new THREE.DodecahedronGeometry(5+Math.random()*2,1),new THREE.MeshStandardMaterial({color:Math.random()<.5?0x315f2f:0x244d2a,roughness:.8}));crown.position.set(x,8,z);crown.castShadow=true;scene.add(crown);const crown2=new THREE.Mesh(new THREE.DodecahedronGeometry(3.5+Math.random(),1),new THREE.MeshStandardMaterial({color:0x3e7338,roughness:.8}));crown2.position.set(x+1.4,11,z-.8);crown2.castShadow=true;scene.add(crown2);obstacles.push({x,z,r:3.7})}
+function createFountain(x,z){const base=new THREE.Mesh(new THREE.CylinderGeometry(9,10,2,40),new THREE.MeshStandardMaterial({color:0x8d8b80,roughness:.7}));base.position.set(x,1,z);base.castShadow=base.receiveShadow=true;scene.add(base);const water=new THREE.Mesh(new THREE.CylinderGeometry(7.5,7.5,.35,40),new THREE.MeshStandardMaterial({color:0x56b6ff,metalness:.15,roughness:.12,transparent:true,opacity:.78,emissive:0x0b3b77,emissiveIntensity:.28}));water.position.set(x,2.2,z);scene.add(water);const statue=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.6,5,18),new THREE.MeshStandardMaterial({color:0xb8b0a0,roughness:.6}));statue.position.set(x,5,z);statue.castShadow=true;scene.add(statue);obstacles.push({x,z,r:7.6})}
+function createStall(x,z){const g=new THREE.Group();const base=new THREE.Mesh(new THREE.BoxGeometry(7,2,4),new THREE.MeshStandardMaterial({color:0x5b321f,roughness:.75}));base.position.y=1;base.castShadow=true;g.add(base);const roof=new THREE.Mesh(new THREE.BoxGeometry(8,.5,5),new THREE.MeshStandardMaterial({color:Math.random()<.5?0xb72531:0x1c5e9c,roughness:.55}));roof.position.y=3.1;roof.castShadow=true;g.add(roof);g.position.set(x,0,z);g.rotation.y=Math.random()*Math.PI;scene.add(g);obstacles.push({x,z,r:3.2})}
+function createLamp(x,z){const pole=new THREE.Mesh(new THREE.CylinderGeometry(.18,.22,5,8),new THREE.MeshStandardMaterial({color:0x171717,metalness:.6,roughness:.3}));pole.position.set(x,2.5,z);pole.castShadow=true;scene.add(pole);const bulb=new THREE.Mesh(new THREE.SphereGeometry(.65,12,12),new THREE.MeshBasicMaterial({color:0xffd98a,transparent:true,opacity:.95}));bulb.position.set(x,5.3,z);scene.add(bulb);const light=new THREE.PointLight(0xffb15a,.75,22);light.position.set(x,5.5,z);scene.add(light)}
+function unitMaterial(color){return new THREE.MeshStandardMaterial({color,roughness:.48,metalness:.05})}
 
-export function buildPremiumLeaderModel(level, color, levels, THREE){
-  const spec = levels[level] || levels[0];
-  const s = spec.scale || 1;
-  const root = new THREE.Group();
-  root.userData.isCharacter = true;
-  root.userData.walkParts = [];
-  root.userData.spinParts = [];
-  root.userData.modelVersion = 'premium-fantasy-v18';
+function mat(color,opts={}){return new THREE.MeshStandardMaterial({color,roughness:opts.roughness??.42,metalness:opts.metalness??.08,emissive:opts.emissive??0x000000,emissiveIntensity:opts.emissiveIntensity??0})}
+function addLimb(group,x,y,z,rotZ,color,s){const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.38*s,2.7*s,4,8),mat(color,{roughness:.48}));arm.position.set(x,y,z);arm.rotation.z=rotZ;arm.castShadow=true;group.add(arm);return arm}
+function addCrown(group,y,s,big=false){const gold=mat(0xffd25b,{metalness:.75,roughness:.18,emissive:0x332000,emissiveIntensity:.45});const band=new THREE.Mesh(new THREE.TorusGeometry((big?1.55:1.25)*s,.12*s,8,28),gold);band.rotation.x=Math.PI/2;band.position.y=y;band.castShadow=true;group.add(band);for(let i=0;i<(big?7:5);i++){const a=i*Math.PI*2/(big?7:5);const spike=new THREE.Mesh(new THREE.ConeGeometry(.25*s,.9*s,8),gold);spike.position.set(Math.cos(a)*(big?1.45:1.15)*s,y+.5*s,Math.sin(a)*(big?1.45:1.15)*s);spike.castShadow=true;group.add(spike)} }
+function addCape(group,color,s,long=false){const cape=new THREE.Mesh(new THREE.BoxGeometry((long?3.6:2.5)*s,.18*s,(long?5.4:3.2)*s),mat(color,{roughness:.55}));cape.position.set(0,(long?3.4:3.2)*s,-1.55*s);cape.rotation.x=.28;cape.castShadow=true;group.add(cape)}
 
-  const palette = [
-    {cloth:0x2f78ff, dark:0x18457c, accent:0x9fd8ff, cape:0x1f5fd0, metal:0xcfd9df, trim:0xf3c56b, hair:0x2a1a12},
-    {cloth:0x21bfff, dark:0x145a7c, accent:0xc8f5ff, cape:0x145a9e, metal:0xd8e8ef, trim:0xffd86b, hair:0x332014},
-    {cloth:0x8847ff, dark:0x3b176e, accent:0xe1b8ff, cape:0x4e188f, metal:0xbfb0ff, trim:0xf6c874, hair:0x24170f},
-    {cloth:0xe53935, dark:0x68131b, accent:0xffad7a, cape:0x8a1020, metal:0x3a4654, trim:0xffd27a, hair:0x27130b},
-    {cloth:0xffcb32, dark:0x7a520b, accent:0xffffff, cape:0x183d88, metal:0xffdf7a, trim:0xffffff, hair:0x1e130a},
-    {cloth:0xfff1c0, dark:0x75604a, accent:0x8fffff, cape:0xffffff, metal:0xffd767, trim:0x7ff8ff, hair:0x21180f}
-  ][level] || {cloth:color,dark:0x1d3557,accent:0xffffff,cape:0x1a4fd0,metal:0xd8e8ef,trim:0xffd86b,hair:0x24170f};
-
-  const matCache = new Map();
-  function M(hex, opts={}){
-    const key = JSON.stringify([hex,opts]);
-    if(matCache.has(key)) return matCache.get(key);
-    const m = new THREE.MeshStandardMaterial({
-      color:hex,
-      roughness:opts.roughness ?? .38,
-      metalness:opts.metalness ?? .08,
-      emissive:opts.emissive ?? 0x000000,
-      emissiveIntensity:opts.emissiveIntensity ?? 0
-    });
-    matCache.set(key,m);return m;
-  }
-  const skin=M(0xf2bd92,{roughness:.58});
-  const blush=M(0xff8e7f,{roughness:.66});
-  const eyeWhite=M(0xffffff,{roughness:.18,emissive:0xffffff,emissiveIntensity:.03});
-  const black=M(0x07080b,{roughness:.55});
-  const cloth=M(palette.cloth,{roughness:.42,metalness:.06,emissive:level>=5?0x221400:0,emissiveIntensity:level>=5?.08:0});
-  const dark=M(palette.dark,{roughness:.52,metalness:.08});
-  const accent=M(palette.accent,{roughness:.24,metalness:level>=4?.35:.1,emissive:level>=5?0x005555:0,emissiveIntensity:level>=5?.18:0});
-  const metal=M(palette.metal,{roughness:.18,metalness:.78,emissive:level>=4?0x2a1800:0,emissiveIntensity:level>=4?.15:0});
-  const trim=M(palette.trim,{roughness:.16,metalness:.82,emissive:0x2d1c00,emissiveIntensity:.16});
-  const capeMat=M(palette.cape,{roughness:.42,metalness:.04,emissive:level>=5?0x111111:0,emissiveIntensity:level>=5?.04:0});
-  const hair=M(palette.hair,{roughness:.82});
-  const leather=M(0x3a2518,{roughness:.76,metalness:.04});
-  const boot=M(0x151019,{roughness:.65,metalness:.06});
-
-  function add(mesh,parent=root){mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;}
-  function box(w,h,d,mat,x,y,z,rx=0,ry=0,rz=0,parent=root){const m=new THREE.Mesh(new THREE.BoxGeometry(w*s,h*s,d*s),mat);m.position.set(x*s,y*s,z*s);m.rotation.set(rx,ry,rz);return add(m,parent)}
-  function sph(r,mat,x,y,z,parent=root,seg=24){const m=new THREE.Mesh(new THREE.SphereGeometry(r*s,seg,Math.max(10,Math.floor(seg*.65))),mat);m.position.set(x*s,y*s,z*s);return add(m,parent)}
-  function cap(r,l,mat,x,y,z,rx=0,ry=0,rz=0,parent=root,seg=14){const m=new THREE.Mesh(new THREE.CapsuleGeometry(r*s,l*s,6,seg),mat);m.position.set(x*s,y*s,z*s);m.rotation.set(rx,ry,rz);return add(m,parent)}
-  function cyl(r,h,mat,x,y,z,rx=0,ry=0,rz=0,parent=root,seg=24){const m=new THREE.Mesh(new THREE.CylinderGeometry(r*s,r*s,h*s,seg),mat);m.position.set(x*s,y*s,z*s);m.rotation.set(rx,ry,rz);return add(m,parent)}
-  function cone(r,h,mat,x,y,z,rx=0,ry=0,rz=0,parent=root,seg=20){const m=new THREE.Mesh(new THREE.ConeGeometry(r*s,h*s,seg),mat);m.position.set(x*s,y*s,z*s);m.rotation.set(rx,ry,rz);return add(m,parent)}
-  function grp(x,y,z,parent=root){const g=new THREE.Group();g.position.set(x*s,y*s,z*s);parent.add(g);return g;}
-
-  const shadow = new THREE.Mesh(new THREE.CircleGeometry((2.55+level*.55)*s,72), new THREE.MeshBasicMaterial({color:0x000000, transparent:true, opacity:.25}));
-  shadow.rotation.x = -Math.PI/2; shadow.position.y = .025; root.add(shadow);
-  const aura = new THREE.Mesh(new THREE.TorusGeometry((2.35+level*.52)*s,.055*s,10,120), new THREE.MeshBasicMaterial({color:color, transparent:true, opacity:level>=1?.32:.14}));
-  aura.rotation.x = Math.PI/2; aura.position.y=.11; aura.userData.spin=true; root.userData.spinParts.push(aura); root.add(aura);
-
-  const body = grp(0,0,0);
-  const leftArm=grp(-.93,3.86,.12,body), rightArm=grp(.93,3.86,.12,body), leftLeg=grp(-.36,1.95,.04,body), rightLeg=grp(.36,1.95,.04,body);
-  root.userData.walkParts=[leftArm,rightArm,leftLeg,rightLeg];
-
-  // Heroic proportioned legs and boots
-  cap(.20,1.75,level>=2?metal:leather,0,-.1,0,.05,0,.06,leftLeg,16);
-  cap(.20,1.75,level>=2?metal:leather,0,-.1,0,-.05,0,-.06,rightLeg,16);
-  box(.62,.34,.86,boot,0,-1.12,.20,0,.07,0,leftLeg);
-  box(.62,.34,.86,boot,0,-1.12,.20,0,-.07,0,rightLeg);
-  box(.72,.12,.94,trim,0,-.82,.30,0,0,.03,leftLeg);
-  box(.72,.12,.94,trim,0,-.82,.30,0,0,-.03,rightLeg);
-  if(level>=2){
-    box(.50,.75,.17,metal,-.08,.38,.46,.08,0,.06,leftLeg); box(.50,.75,.17,metal,.08,.38,.46,-.08,0,-.06,rightLeg);
-    box(.48,.14,.18,trim,-.08,.84,.55,0,0,.05,leftLeg); box(.48,.14,.18,trim,.08,.84,.55,0,0,-.05,rightLeg);
-  }
-
-  // Pelvis, skirt, layered tunic/armor
-  box(1.28,.35,.76,leather,0,2.55,.05,0,0,0,body);
-  for(let i=-2;i<=2;i++){box(.33,.80,.14,i===0?accent:cloth,i*.32,2.18,.55,0,0,-i*.06,body)}
-  const waist=box(1.02,.76,.62,cloth,0,3.03,.02,0,0,0,body); waist.scale.set(1,.9,.72);
-  const chest=sph(.77,cloth,0,3.88,.05,body,32); chest.scale.set(1.24,.82,.78);
-  box(1.36,.22,.82,leather,0,2.80,.17,0,0,0,body);
-  box(.34,.42,.19,trim,0,2.82,.60,0,0,0,body);
-  box(1.22,1.22,.18,level>=1?metal:M(0xe8dac3,{roughness:.62}),0,3.52,.68,0,0,0,body);
-  box(.16,1.28,.22,trim,0,3.56,.83,0,0,0,body);
-  for(let side of [-1,1]){box(.16,1.1,.16,trim,side*.52,3.55,.82,0,0,side*.16,body)}
-
-  // Shoulders and collar, gives non-blocky silhouette
-  const shL=sph(.42,level>=2?trim:metal,-.92,4.26,.10,body,26); shL.scale.set(1.35,.62,.9);
-  const shR=sph(.42,level>=2?trim:metal,.92,4.26,.10,body,26); shR.scale.set(1.35,.62,.9);
-  box(1.68,.16,.36,trim,0,4.34,.30,0,0,0,body);
-  if(level>=3){sph(.24,M(0xfff3d6,{roughness:.45}),-.96,4.50,.08,body,16);sph(.24,M(0xfff3d6,{roughness:.45}),.96,4.50,.08,body,16)}
-
-  // Arms with separated upper/forearm/hands
-  sph(.23,level>=1?metal:cloth,0,.43,0,leftArm,18); sph(.23,level>=1?metal:cloth,0,.43,0,rightArm,18);
-  cap(.16,1.06,level>=2?metal:cloth,0,-.18,.03,0,0,.38,leftArm,16);
-  cap(.16,1.06,level>=2?metal:cloth,0,-.18,.03,0,0,-.38,rightArm,16);
-  box(.38,.24,.45,level>=2?metal:leather,-.30,-.74,.15,0,0,.18,leftArm);
-  box(.38,.24,.45,level>=2?metal:leather,.30,-.74,.15,0,0,-.18,rightArm);
-  sph(.17,skin,-.43,-.97,.18,leftArm,14); sph(.17,skin,.43,-.97,.18,rightArm,14);
-
-  // Face/head/hair with readable game-camera detail
-  cyl(.18,.35,skin,0,4.62,0,0,0,0,body,20);
-  const head=sph(.67,skin,0,5.24,.05,body,34); head.scale.set(.92,1.05,.86);
-  const hairCap=sph(.70,hair,0,5.50,-.08,body,28); hairCap.scale.set(1.02,.58,.78);
-  sph(.19,hair,-.54,5.25,.03,body,16); sph(.19,hair,.54,5.25,.03,body,16);
-  for(let i=-4;i<=4;i++){cone(.12,.50,hair,i*.12,5.63,.52,Math.PI*.62,0,i*.09,body,10)}
-  sph(.073,eyeWhite,-.23,5.32,.61,body,12); sph(.073,eyeWhite,.23,5.32,.61,body,12);
-  sph(.036,black,-.23,5.31,.66,body,8); sph(.036,black,.23,5.31,.66,body,8);
-  box(.24,.035,.035,black,-.25,5.47,.63,0,0,.12,body); box(.24,.035,.035,black,.25,5.47,.63,0,0,-.12,body);
-  box(.20,.035,.03,M(0x8b4b43,{roughness:.7}),0,5.10,.66,0,0,0,body);
-  sph(.05,blush,-.44,5.18,.58,body,10); sph(.05,blush,.44,5.18,.58,body,10);
-
-  // Tier-specific accessories: visible silhouette changes
-  if(level===0){
-    box(.84,1.02,.12,M(0xf2dfbd,{roughness:.68}),0,3.55,.80,0,0,.06,body);
-    cyl(.035,1.35,leather,.72,3.35,.22,0,0,-.55,body,8);
-  }
-  if(level>=1){
-    const shield=cyl(.72,.18,cloth,-1.56,3.35,.62,Math.PI/2,.08,.1,body,40); shield.scale.set(.82,1.18,1);
-    cyl(.46,.20,metal,-1.57,3.36,.65,Math.PI/2,.08,.1,body,32);
-    box(.86,.13,.12,trim,-1.57,3.36,.82,0,0,.1,body);
-    cyl(.05,2.60,metal,1.58,3.20,.34,0,0,-.48,body,12); cone(.18,.55,metal,2.12,2.18,.36,0,0,-.48,body,16);
-    cyl(.56,.44,metal,0,5.85,0,0,0,0,body,30); cone(.20,.42,trim,0,6.24,0,0,0,0,body,16);
-  }
-  if(level>=2){
-    box(1.58,1.40,.24,M(0x5d24bb,{roughness:.38,metalness:.18,emissive:0x12002a,emissiveIntensity:.1}),0,3.70,.88,0,0,0,body);
-    box(.25,1.46,.24,trim,0,3.70,1.06,0,0,0,body);
-    addCapeLayer(2.9,4.0,.33,palette.cape,0,body);
-    cone(.38,.74,M(0x7835e8,{roughness:.36,metalness:.12}),0,6.20,0,0,0,0,body,22);
-    cone(.11,.66,trim,-.50,6.20,0,0,0,.45,body,12); cone(.11,.66,trim,.50,6.20,0,0,0,-.45,body,12);
-  }
-  if(level>=3){
-    box(1.85,1.62,.30,M(0xb91d28,{roughness:.34,metalness:.22,emissive:0x220005,emissiveIntensity:.1}),0,3.78,1.02,0,0,0,body);
-    box(.35,1.72,.34,trim,0,3.80,1.22,0,0,0,body);
-    addCapeLayer(3.7,5.15,.40,0x8a1020,0,body);
-    cyl(.07,3.45,trim,-1.92,3.46,.62,0,0,.08,body,12); box(1.02,.64,.10,M(0xb91d28,{roughness:.36}),-2.18,4.80,.68,0,0,.08,body);
-    addSmallCrown(body,.62,6.40,5);
-  }
-  if(level>=4){
-    box(2.06,1.82,.36,trim,0,3.90,1.12,0,0,0,body);
-    box(.40,1.90,.46,accent,0,3.92,1.38,0,0,0,body);
-    addCapeLayer(4.25,5.95,.45,0x153b88,0,body);
-    addCrown(body,.92,6.55,7);
-    cyl(.08,3.1,trim,1.98,3.36,.46,0,0,-.35,body,12); sph(.28,M(0x8df7ff,{roughness:.08,emissive:0x24d8ff,emissiveIntensity:1.1}),1.50,4.50,.48,body,18);
-  }
-  if(level>=5){
-    box(2.36,2.08,.44,M(0xfff0c9,{roughness:.26,metalness:.24,emissive:0x221400,emissiveIntensity:.1}),0,3.96,1.24,0,0,0,body);
-    box(.44,2.14,.56,trim,0,4.00,1.54,0,0,0,body);
-    addCapeLayer(5.45,7.05,.50,0xfff4df,.08,body);
-    addCrown(body,1.1,6.85,9);
-    const halo=new THREE.Mesh(new THREE.TorusGeometry(1.62*s,.045*s,8,96),new THREE.MeshBasicMaterial({color:0x93ffff,transparent:true,opacity:.5}));halo.position.set(0,5.20*s,.08*s);halo.rotation.x=Math.PI/2;halo.userData.spin=true;root.userData.spinParts.push(halo);body.add(halo);
-    cyl(.09,4.1,trim,2.10,3.48,.52,0,0,-.22,body,16); sph(.34,M(0x8cffff,{roughness:.08,emissive:0x26dcff,emissiveIntensity:1.45}),2.58,5.24,.55,body,22);
-  }
-
-  function addCapeLayer(w,d,tilt,hex,offset,parent){
-    const back=box(w,.22,d,M(hex,{roughness:.40,metalness:.03,emissive:level>=5?0x111111:0,emissiveIntensity:level>=5?.06:0}),0,2.55,-1.56-offset,tilt,0,0,parent);
-    back.scale.z=1.0;
-    box(w*.64,.08,d*.88,M(0xffffff,{roughness:.3,metalness:.06,emissive:level>=5?0x111111:0,emissiveIntensity:level>=5?.04:0}),0,2.72,-1.58-offset,tilt+.02,0,0,parent);
-    for(let side of [-1,1]) box(.16,.16,d*.94,trim,side*w*.42,2.70,-1.52-offset,tilt,0,side*.05,parent);
-  }
-  function addSmallCrown(parent,r,y,points){
-    const band=new THREE.Mesh(new THREE.TorusGeometry(r*s,.08*s,10,48),trim); band.rotation.x=Math.PI/2; band.position.set(0,y*s,0); add(band,parent);
-    for(let i=0;i<points;i++){const a=i*Math.PI*2/points; cone(.10,.42,trim,Math.cos(a)*r,y+.32,Math.sin(a)*r,0,0,a,parent,12)}
-  }
-  function addCrown(parent,r,y,points){
-    const band=new THREE.Mesh(new THREE.TorusGeometry(r*s,.10*s,12,64),trim); band.rotation.x=Math.PI/2; band.position.set(0,y*s,0); add(band,parent);
-    for(let i=0;i<points;i++){const a=i*Math.PI*2/points; cone(.12,.65,trim,Math.cos(a)*r,y+.46,Math.sin(a)*r,0,0,a,parent,14)}
-    sph(.10,accent,0,(y+.75),r*.02,parent,14);
-  }
-
-  // Toon-like outline shells on key pieces only. High quality without applying to all NPCs.
-  const outlineMat = new THREE.MeshBasicMaterial({color:0x05070b, side:THREE.BackSide, transparent:true, opacity:.22});
-  const outlineTargets=[];
-  body.traverse(o=>{ if(o.isMesh && o.geometry && !String(o.geometry.type).includes('Circle') && outlineTargets.length<34) outlineTargets.push(o); });
-  for(const o of outlineTargets){
-    const clone = new THREE.Mesh(o.geometry, outlineMat);
-    clone.position.copy(o.position); clone.rotation.copy(o.rotation); clone.scale.copy(o.scale).multiplyScalar(1.025);
-    o.parent.add(clone);
-  }
-  root.scale.setScalar(1.42);
-  return root;
+function buildCrowdModel(color,team='neutral'){
+ const g=new THREE.Group();g.userData.isSimple=true;
+ const c=new THREE.Color(color);
+ const bodyMat=new THREE.MeshStandardMaterial({color:c,roughness:.72,metalness:.02});
+ const skinMat=new THREE.MeshStandardMaterial({color:0xe8bf94,roughness:.74});
+ const darkMat=new THREE.MeshStandardMaterial({color:team==='neutral'?0x6f6a62:color,roughness:.82});
+ const shadow=new THREE.Mesh(new THREE.CircleGeometry(1.35,18),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.18}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.02;g.add(shadow);
+ const legL=new THREE.Mesh(new THREE.CapsuleGeometry(.13,1.15,3,6),darkMat);legL.position.set(-.22,1.0,0);legL.castShadow=true;g.add(legL);
+ const legR=new THREE.Mesh(new THREE.CapsuleGeometry(.13,1.15,3,6),darkMat);legR.position.set(.22,1.0,0);legR.castShadow=true;g.add(legR);
+ const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.34,1.25,4,8),bodyMat);torso.position.set(0,2.25,0);torso.scale.set(1,.95,.72);torso.castShadow=true;g.add(torso);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.38,12,10),skinMat);head.position.set(0,3.35,.02);head.castShadow=true;g.add(head);
+ const hair=new THREE.Mesh(new THREE.SphereGeometry(.39,10,6),new THREE.MeshStandardMaterial({color:0x2a2119,roughness:.85}));hair.position.set(0,3.54,-.04);hair.scale.set(1,.45,.8);hair.castShadow=true;g.add(hair);
+ const armL=new THREE.Mesh(new THREE.CapsuleGeometry(.10,.95,3,6),bodyMat);armL.position.set(-.48,2.15,0);armL.rotation.z=.18;armL.castShadow=true;g.add(armL);
+ const armR=new THREE.Mesh(new THREE.CapsuleGeometry(.10,.95,3,6),bodyMat);armR.position.set(.48,2.15,0);armR.rotation.z=-.18;armR.castShadow=true;g.add(armR);
+ g.scale.setScalar(.95);return g
 }
+function buildCharacterModel(level,color){
+ const l=levels[level],s=l.scale,group=new THREE.Group();group.userData.walkParts=[];group.userData.isCharacter=true;
+ const C=(hex,opts={})=>new THREE.MeshStandardMaterial({color:hex,roughness:opts.r??.38,metalness:opts.m??.08,emissive:opts.e??0x000000,emissiveIntensity:opts.ei??0});
+ const skin=C(0xf2c09a,{r:.58});
+ const skin2=C(0xffd1aa,{r:.52});
+ const black=C(0x0b0b10,{r:.62});
+ const hair=C(level>=4?0x2b160b:0x211710,{r:.78});
+ const leather=C(0x3a2115,{r:.72});
+ const boot=C(0x141018,{r:.62});
+ const steel=C(0xdce6ee,{m:.62,r:.2});
+ const darkSteel=C(0x334050,{m:.45,r:.28});
+ const gold=C(0xffcf52,{m:.86,r:.13,e:0x2b1a00,ei:.22});
+ const white=C(0xfff2d9,{m:.18,r:.26,e:0x201200,ei:.08});
+ const blue=C(0x2878ff,{m:.12,r:.32,e:0x001a44,ei:.05});
+ const purple=C(0x7b35e5,{m:.16,r:.32,e:0x180044,ei:.12});
+ const red=C(0xb91d28,{m:.16,r:.34,e:0x280006,ei:.10});
+ const trim=C(level>=5?0xffffff:level>=4?0xffe69a:level>=3?0xffb96d:level>=2?0xd9a8ff:0xa6dcff,{m:.42,r:.18,e:level>=2?color:0x000000,ei:level>=4?.18:.06});
+ const baseMat=[C(0x75604a,{r:.66}),blue,purple,red,gold,white][level]||blue;
+ function mesh(geo,ma,x,y,z,rx=0,ry=0,rz=0,parent=group){const m=new THREE.Mesh(geo,ma);m.position.set(x*s,y*s,z*s);m.rotation.set(rx,ry,rz);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
+ function grp(x=0,y=0,z=0,parent=group){const g=new THREE.Group();g.position.set(x*s,y*s,z*s);parent.add(g);return g}
+ function cap(radius,len,ma,x,y,z,rx=0,ry=0,rz=0,parent=group,seg=16){return mesh(new THREE.CapsuleGeometry(radius*s,len*s,8,seg),ma,x,y,z,rx,ry,rz,parent)}
+ function box(w,h,d,ma,x,y,z,rx=0,ry=0,rz=0,parent=group){return mesh(new THREE.BoxGeometry(w*s,h*s,d*s),ma,x,y,z,rx,ry,rz,parent)}
+ function sph(r,ma,x,y,z,parent=group,seg=24){return mesh(new THREE.SphereGeometry(r*s,seg,Math.max(10,seg*.6|0)),ma,x,y,z,0,0,0,parent)}
+ function cone(r,h,ma,x,y,z,rx=0,ry=0,rz=0,parent=group,seg=18){return mesh(new THREE.ConeGeometry(r*s,h*s,seg),ma,x,y,z,rx,ry,rz,parent)}
+ function cyl(r,h,ma,x,y,z,rx=0,ry=0,rz=0,parent=group,seg=24){return mesh(new THREE.CylinderGeometry(r*s,r*s,h*s,seg),ma,x,y,z,rx,ry,rz,parent)}
+ // soft shadow and aura, bigger leader silhouette but followers remain lightweight
+ const shadow=new THREE.Mesh(new THREE.CircleGeometry((2.25+level*.42)*s,64),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.24}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.025;group.add(shadow);
+ if(level>=1){const aura=new THREE.Mesh(new THREE.TorusGeometry((2.25+level*.42)*s,.055*s,10,96),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.24}));aura.rotation.x=Math.PI/2;aura.position.y=.09;aura.userData.spin=true;group.add(aura)}
+ const leftArm=grp(-.92,3.72,.03),rightArm=grp(.92,3.72,.03),leftLeg=grp(-.36,1.95,0),rightLeg=grp(.36,1.95,0);group.userData.walkParts=[leftArm,rightArm,leftLeg,rightLeg];
+ // legs and boots: separate, angled, visible humanoid form
+ cap(.20,1.74,level>=2?darkSteel:leather,0,-.1,0,.04,0,.08,leftLeg,14);
+ cap(.20,1.74,level>=2?darkSteel:leather,0,-.1,0,-.04,0,-.08,rightLeg,14);
+ box(.58,.32,.82,boot,0,-1.14,.20,0,.05,0,leftLeg);box(.58,.32,.82,boot,0,-1.14,.20,0,-.05,0,rightLeg);
+ box(.62,.11,.88,trim,0,-.88,.28,0,0,.04,leftLeg);box(.62,.11,.88,trim,0,-.88,.28,0,0,-.04,rightLeg);
+ // pelvis/skirt plates
+ box(1.25,.32,.78,leather,0,2.48,.06);
+ for(let i=-1;i<=1;i++){box(.38,.68,.14,baseMat,i*.42,2.18,.53,0,0,-i*.11)}
+ // tapered heroic torso, no column: chest, waist, abdomen and shoulder volume
+ const waist=box(1.08,.78,.64,baseMat,0,3.05,.02);waist.scale.set(1,.92,.72);
+ const chest=sph(.76,baseMat,0,3.85,.04,group,28);chest.scale.set(1.22,.78,.76);
+ box(1.34,.20,.76,leather,0,2.75,.18);box(.34,.38,.16,gold,0,2.76,.58);
+ box(1.18,1.16,.18,level>=1?steel:C(0xe0d3b6,{r:.62}),0,3.52,.64);
+ box(.12,1.18,.22,trim,0,3.54,.80);
+ // shoulders
+ sph(.38,level>=2?gold:level>=1?steel:baseMat,-.86,4.23,.08,group,22).scale.set(1.28,.60,.88);
+ sph(.38,level>=2?gold:level>=1?steel:baseMat,.86,4.23,.08,group,22).scale.set(1.28,.60,.88);
+ // neck/head/face
+ cyl(.17,.35,skin,0,4.61,0,0,0,0,group,18);
+ const head=sph(.66,level>=5?skin2:skin,0,5.22,.04,group,32);head.scale.set(.92,1.05,.86);
+ const hairBack=sph(.69,hair,0,5.46,-.08,group,24);hairBack.scale.set(1.02,.58,.78);
+ for(let i=-3;i<=3;i++){cone(.115,.48,hair,i*.14,5.58,.50,Math.PI*.62,0,i*.11,group,10)}
+ sph(.20,hair,-.53,5.26,.04,group,14);sph(.20,hair,.53,5.26,.04,group,14);
+ sph(.072,C(0xffffff,{r:.15,e:0xffffff,ei:.05}),-.22,5.31,.59,group,12);sph(.072,C(0xffffff,{r:.15,e:0xffffff,ei:.05}),.22,5.31,.59,group,12);
+ sph(.035,black,-.22,5.30,.64,group,8);sph(.035,black,.22,5.30,.64,group,8);
+ box(.22,.035,.035,black,-.24,5.45,.62,0,0,.14);box(.22,.035,.035,black,.24,5.45,.62,0,0,-.14);
+ box(.20,.035,.03,C(0x9b574b,{r:.7}),0,5.09,.64);sph(.048,C(0xff9c86,{r:.72}),-.42,5.17,.57,group,10);sph(.048,C(0xff9c86,{r:.72}),.42,5.17,.57,group,10);
+ // arms: upper arm, forearm, gloves and palms
+ sph(.22,level>=1?steel:baseMat,0,.40,0,leftArm,16);sph(.22,level>=1?steel:baseMat,0,.40,0,rightArm,16);
+ cap(.15,1.06,level>=2?darkSteel:baseMat,0,-.18,.03,0,0,.38,leftArm,12);cap(.15,1.06,level>=2?darkSteel:baseMat,0,-.18,.03,0,0,-.38,rightArm,12);
+ box(.34,.22,.42,level>=2?darkSteel:leather,-.28,-.74,.14,0,0,.16,leftArm);box(.34,.22,.42,level>=2?darkSteel:leather,.28,-.74,.14,0,0,-.16,rightArm);
+ sph(.16,skin,-.42,-.94,.18,leftArm,12);sph(.16,skin,.42,-.94,.18,rightArm,12);
+ // equipment tiers: large readable silhouettes from gameplay camera
+ if(level===0){
+   box(.82,.96,.11,C(0xf0dbb7,{r:.68}),0,3.55,.78,0,0,.08);
+   cyl(.035,1.3,leather,.72,3.35,.22,0,0,-.55,group,8);
+ }
+ if(level>=1){
+   const shield=cyl(.68,.18,blue,-1.54,3.35,.58,Math.PI/2,.08,.1,group,36);shield.scale.set(.82,1.16,1);cyl(.44,.20,steel,-1.55,3.36,.61,Math.PI/2,.08,.1,group,32);box(.8,.13,.12,trim,-1.55,3.36,.78,0,0,.1);
+   cyl(.045,2.55,steel,1.55,3.20,.32,0,0,-.48,group,10);cone(.17,.55,steel,2.09,2.18,.34,0,0,-.48,group,14);
+   cyl(.55,.44,steel,0,5.82,0,0,0,0,group,28);cone(.20,.42,gold,0,6.20,0);
+ }
+ if(level>=2){
+   box(1.55,1.35,.22,purple,0,3.67,.87);box(.24,1.42,.24,gold,0,3.68,1.04);
+   box(2.45,.16,3.65,C(0x3d0f76,{r:.43,e:0x14002d,ei:.08}),0,2.84,-1.22,.35);
+   cone(.36,.72,purple,0,6.18,0);cone(.10,.66,gold,-.48,6.18,0,0,0,.48);cone(.10,.66,gold,.48,6.18,0,0,0,-.48);
+   const halo=new THREE.Mesh(new THREE.TorusGeometry(1.08*s,.035*s,8,64),new THREE.MeshBasicMaterial({color:0xd9a8ff,transparent:true,opacity:.36}));halo.position.set(0,5.95*s,.05*s);halo.rotation.x=Math.PI/2;halo.userData.spin=true;group.add(halo);
+ }
+ if(level>=3){
+   box(1.78,1.55,.28,red,0,3.76,1.0);box(.32,1.68,.32,gold,0,3.78,1.18);
+   box(3.25,.20,4.95,C(0x8b0e19,{r:.42,e:0x250005,ei:.08}),0,2.62,-1.52,.42);
+   cyl(.07,3.4,gold,-1.9,3.46,.60,0,0,.08,group,12);box(1.02,.62,.10,red,-2.15,4.78,.65,0,0,.08);
+   cone(.36,.45,gold,0,6.35,0);for(let i=-1;i<=1;i++)cone(.10,.42,gold,i*.28,6.45,.04,0,0,i*.15);
+ }
+ if(level>=4){
+   box(2.02,1.78,.34,gold,0,3.86,1.12);box(.36,1.86,.44,white,0,3.88,1.36);
+   box(3.9,.22,5.75,C(0x102e72,{r:.36,e:0x051237,ei:.12}),0,2.48,-1.70,.45);
+   const band=new THREE.Mesh(new THREE.TorusGeometry(.86*s,.09*s,10,48),gold);band.rotation.x=Math.PI/2;band.position.set(0,6.45*s,0);band.castShadow=true;group.add(band);for(let i=0;i<6;i++){const a=i*Math.PI*2/6;cone(.11,.54,gold,Math.cos(a)*.80,6.74,Math.sin(a)*.80,0,0,a)}
+   cyl(.07,3.0,gold,1.95,3.36,.44,0,0,-.35,group,12);sph(.26,C(0x8df7ff,{r:.08,e:0x24d8ff,ei:1.2}),1.50,4.48,.46,group,18);
+ }
+ if(level>=5){
+   box(2.28,2.02,.42,white,0,3.92,1.22);box(.40,2.08,.54,gold,0,3.96,1.50);
+   box(5.2,.26,6.85,C(0xfff4df,{m:.18,r:.25,e:0x331e00,ei:.12}),0,2.25,-1.98,.48);
+   const band=new THREE.Mesh(new THREE.TorusGeometry(1.05*s,.11*s,10,56),gold);band.rotation.x=Math.PI/2;band.position.set(0,6.76*s,0);band.castShadow=true;group.add(band);for(let i=0;i<8;i++){const a=i*Math.PI*2/8;cone(.12,.68,gold,Math.cos(a)*1.02,7.08,Math.sin(a)*1.02,0,0,a)}
+   const halo=new THREE.Mesh(new THREE.TorusGeometry(1.55*s,.045*s,8,80),new THREE.MeshBasicMaterial({color:0x8cffff,transparent:true,opacity:.50}));halo.position.set(0,5.13*s,.05*s);halo.rotation.x=Math.PI/2;halo.userData.spin=true;group.add(halo);
+   cyl(.08,4.0,gold,2.08,3.45,.50,0,0,-.22,group,14);sph(.31,C(0x8cffff,{r:.08,e:0x26dcff,ei:1.4}),2.55,5.18,.52,group,20);
+ }
+ // outline shell on important leader model parts: gives high-quality toon readable contour
+ if(level>=1){
+   const outlineMat=new THREE.MeshBasicMaterial({color:0x05070b,side:THREE.BackSide,transparent:true,opacity:.32});
+   group.children.slice().forEach(o=>{if(o.isMesh&&o.geometry&&o.material&&o.material!==outlineMat&&o.geometry.type!=='CircleGeometry'&&Math.random()<.42){const clone=new THREE.Mesh(o.geometry,outlineMat);clone.position.copy(o.position);clone.rotation.copy(o.rotation);clone.scale.copy(o.scale).multiplyScalar(1.035);clone.castShadow=false;clone.receiveShadow=false;group.add(clone)}});
+ }
+ group.scale.setScalar(1.34);return group}
+function animateCharacterUnit(u,t){if(!u||!u.group)return;const parts=u.group.children[0]?.userData?.walkParts;if(!parts)return;const moving=(u.lastPos?u.group.position.distanceTo(u.lastPos):0)>0.01;u.lastPos=u.group.position.clone();const w=moving?Math.sin(t*9+u.group.id)*.42:Math.sin(t*2+u.group.id)*.05;parts[0].rotation.x=w;parts[1].rotation.x=-w;parts[2].rotation.x=-w*.7;parts[3].rotation.x=w*.7}
+function animateAllCharacters(){const t=performance.now()/1000;[player,...enemies].forEach(u=>!u?.dead&&animateCharacterUnit(u,t))}
+function refreshUnitVisual(u){const pos=u.group.position.clone(),rot=u.group.rotation.y,parent=u.group.parent;if(parent)parent.remove(u.group);const newGroup=new THREE.Group();const l=levels[u.level];const isLeader=(u===player||u.team==='enemy');const model=isLeader?buildCharacterModel(u.level,u.color):buildCrowdModel(u.color,u.team);newGroup.add(model);let ring=null;if(isLeader){ring=new THREE.Mesh(new THREE.TorusGeometry(l.range,.075,8,72),new THREE.MeshBasicMaterial({color:u.color,transparent:true,opacity:u===player?.34:.26}));ring.rotation.x=Math.PI/2;ring.position.y=.15;newGroup.add(ring)}let label=null;if(isLeader){const txt=(u.team==='enemy'&&u.level===0)?`적 세력\n★  ${Math.floor(u.power).toLocaleString()}`:`${l.name} | ${l.tag}\n${l.stars}  ${Math.floor(u.power).toLocaleString()}`;label=makeLabel(txt);label.position.y=(isLeader?11.5*l.scale:5);newGroup.add(label)}newGroup.position.copy(pos);newGroup.rotation.y=rot;u.group=newGroup;u.ring=ring;u.label=label;u.range=l.range;u.radius=isLeader?1.8*l.scale:1.15;if(parent)parent.add(newGroup)}
+function createUnit(x,z,level=0,color=null,isPlayer=false){const l=levels[level];const c=color??l.color;const group=new THREE.Group();const isLeader=!!isPlayer||level>=1;const model=isLeader?buildCharacterModel(level,c):buildCrowdModel(c,'neutral');group.add(model);let ring=null;if(isLeader){ring=new THREE.Mesh(new THREE.TorusGeometry(l.range,.075,8,72),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:isPlayer?.34:.20}));ring.rotation.x=Math.PI/2;ring.position.y=.15;group.add(ring)}const label=(isLeader&&level>=1)?makeLabel(`${l.name} | ${l.tag}\n${l.stars}  1`):null;if(label){label.position.y=11.5*l.scale;group.add(label)}group.position.set(x,0,z);return {group,level,color:c,power:1,collected:1,score:0,range:l.range,radius:isLeader?1.8*l.scale:1.15,speed:18,dir:new THREE.Vector3(Math.random()-.5,0,Math.random()-.5).normalize(),label,ring,team:'neutral',ai:0,dead:false}}
+function makeLabel(text){const cn=document.createElement('canvas');cn.width=512;cn.height=160;const ctx=cn.getContext('2d');const tex=new THREE.CanvasTexture(cn);const spr=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));spr.scale.set(13,4,1);spr.userData={cn,ctx,tex,text:''};updateLabel(spr,text,0x2f8cff);return spr}
+function updateLabel(spr,text,color=0x2f8cff){if(spr.userData.text===text&&spr.userData.color===color)return;spr.userData.text=text;spr.userData.color=color;const {cn,ctx,tex}=spr.userData;ctx.clearRect(0,0,cn.width,cn.height);ctx.fillStyle='rgba(3,8,15,.78)';round(ctx,18,18,476,124,22);ctx.fill();ctx.lineWidth=4;ctx.strokeStyle='#'+color.toString(16).padStart(6,'0');ctx.stroke();ctx.font='800 34px system-ui';ctx.fillStyle='white';ctx.textAlign='center';const lines=text.split('\n');ctx.fillText(lines[0],256,62);ctx.font='900 34px system-ui';ctx.fillStyle='#ffd25b';ctx.fillText(lines[1]||'',256,108);tex.needsUpdate=true}
+function round(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function spawnNpc(){let p=safePos();const u=createUnit(p.x,p.z,0,0xb8b2a5,false);u.team='neutral';u.speed=4+Math.random()*5;scene.add(u.group);npcs.push(u)}
+function spawnEnemy(i){let p=safePos(45);const lv=Math.random()<.55?0:(Math.random()<.8?1:2);const palette=[0xff3838,0x9b55ff,0x31d158,0xffbd2e,0xff7a33,0xdb4bff,0x45d6ff];const e=createUnit(p.x,p.z,lv,palette[i%palette.length],false);e.team='enemy';e.power=(lv===0?18:65)+Math.floor(Math.random()*120)*(lv+1);e.collected=Math.min(99,Math.floor(e.power/Math.max(1,levels[lv].mult)));e.speed=12+Math.random()*4;e.ai=Math.random()*10;refreshUnitVisual(e);scene.add(e.group);enemies.push(e)}
+function randomPos(){return {x:(Math.random()-.5)*(worldSize-18),z:(Math.random()-.5)*(worldSize-18)}}
+function safePos(minCenter=0){for(let k=0;k<500;k++){const p=randomPos();if(Math.hypot(p.x,p.z)<minCenter)continue;if(!blocked(p.x,p.z,4))return p}return randomPos()}
+function blocked(x,z,r){if(Math.abs(x)>worldSize/2-r||Math.abs(z)>worldSize/2-r)return true;return obstacles.some(o=>Math.hypot(x-o.x,z-o.z)<o.r+r)}
+function moveUnit(u,dx,dz,dt){if(dx||dz){const len=Math.hypot(dx,dz)||1;dx/=len;dz/=len;const step=u.speed*dt;tryMove(u,dx*step,0);tryMove(u,0,dz*step);u.group.rotation.y=Math.atan2(dx,dz)}}
+function tryMove(u,dx,dz){const nx=u.group.position.x+dx,nz=u.group.position.z+dz;if(!blocked(nx,nz,u.radius)){u.group.position.x=nx;u.group.position.z=nz}else{for(let a=0;a<8;a++){const ang=a*Math.PI/4;const sx=Math.cos(ang)*Math.hypot(dx,dz)*.65,sz=Math.sin(ang)*Math.hypot(dx,dz)*.65;if(!blocked(u.group.position.x+sx,u.group.position.z+sz,u.radius)){u.group.position.x+=sx;u.group.position.z+=sz;break}}}}
+function animate(){animationId=requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.033);if(!state.over&&!paused){update(dt);state.time-=dt;if(state.time<=0)endGame('TIME UP','시간이 종료되었습니다.')}render();}
+function update(dt){let dx=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0);let dz=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0);if(joyVec.x||joyVec.y){dx=joyVec.x;dz=joyVec.y}moveUnit(player,dx,dz,dt);updateFollowers(dt);updateNpcs(dt);updateEnemies(dt);absorbChecks();animateAllCharacters();updateCamera(dt);updateParticles(dt);scene.traverse(o=>{if(o.userData&&o.userData.spin)o.rotation.z+=dt*.8});updateUI();}
+function updateFollowers(dt){const px=player.group.position.x,pz=player.group.position.z;followers.forEach((f,i)=>{const angle=i*.72;const dist=5+Math.sqrt(i)*1.8;const tx=px+Math.cos(angle+performance.now()/900)*dist,tz=pz+Math.sin(angle+performance.now()/900)*dist;const dx=tx-f.group.position.x,dz=tz-f.group.position.z;f.speed=24;moveUnit(f,dx,dz,dt)})}
+function updateNpcs(dt){npcs.forEach(n=>{n.ai-=dt;if(n.ai<=0){n.ai=1+Math.random()*3;n.dir.set(Math.random()-.5,0,Math.random()-.5).normalize()}moveUnit(n,n.dir.x,n.dir.z,dt)})}
+function updateEnemies(dt){enemies.forEach(e=>{if(e.dead)return;e.ai-=dt;let target=null,best=9999;const candidates=[...npcs,player,...enemies.filter(x=>x!==e&&!x.dead)];for(const t of candidates){if(t.dead)continue;const d=e.group.position.distanceTo(t.group.position);const canTake=(t.team==='neutral')||(t.team==='player'&&e.power>player.power*1.04)||(t.team==='enemy'&&e.power>t.power*1.08);if(canTake&&d<best){best=d;target=t}}if(target&&best<70){const v=target.group.position.clone().sub(e.group.position);moveUnit(e,v.x,v.z,dt)}else{if(e.ai<=0){e.ai=1+Math.random()*2;e.dir.set(Math.random()-.5,0,Math.random()-.5).normalize()}moveUnit(e,e.dir.x,e.dir.z,dt)}updateEnemyVisual(e)})}
+function removeNpc(n){const idx=npcs.indexOf(n);if(idx>=0)npcs.splice(idx,1);scene.remove(n.group);n.dead=true}
+function combatPower(u){return Math.max(1,Math.floor(u.power||1))}
+function stealFromPlayer(enemy,amount,pos){
+ const loss=Math.max(1,Math.min(Math.floor(amount),Math.floor(player.power-1)));
+ if(loss<=0){endGame('GAME OVER',`${levels[enemy.level].name} 세력에게 완전히 흡수되었습니다.`);return}
+ player.power-=loss;player.collected=Math.max(0,player.collected-Math.ceil(loss/Math.max(1,levels[player.level].mult)));
+ state.score=Math.max(0,state.score-loss*5);
+ enemy.power+=loss;enemy.collected+=Math.max(1,Math.floor(loss/Math.max(1,levels[enemy.level].mult)));
+ if(followers.length){const victim=followers.pop();scene.remove(victim.group)}
+ spawnBurst(pos||player.group.position,enemy.color,16);checkEvolution(enemy);
+ if(player.power<=1&&followers.length===0)endGame('GAME OVER',`${levels[enemy.level].name} 세력에게 패배했습니다.`);
+}
+function playerFactionPositions(){return [player,...followers.filter(f=>!f.dead)]}
+function absorbChecks(){const absorbed=new Set();
+ const playerUnits=playerFactionPositions();
+ for(const n of [...npcs]){if(n.dead||absorbed.has(n))continue;let done=false;
+   for(const pu of playerUnits){if(pu.group.position.distanceTo(n.group.position)<Math.max(2.8,player.range*.55)){absorbed.add(n);removeNpc(n);absorbNpc(player,n);done=true;break}}
+   if(done)continue;
+   for(const e of enemies){if(e.dead)continue;if(e.group.position.distanceTo(n.group.position)<e.range*.85){absorbed.add(n);removeNpc(n);absorbNpc(e,n);break}}
+ }
+ for(const e of [...enemies]){if(e.dead)continue;
+   const fightRange=Math.max(4,player.range*.48+e.range*.38);
+   let contact=false,contactPos=null;
+   for(const pu of playerFactionPositions()){if(pu.group.position.distanceTo(e.group.position)<fightRange){contact=true;contactPos=pu.group.position.clone();break}}
+   if(contact){
+     if(combatPower(player)>=combatPower(e)*1.06){defeatEnemy(e)}
+     else if(combatPower(e)>=combatPower(player)*1.03){stealFromPlayer(e,Math.max(3,Math.floor(e.power*.22)),contactPos)}
+   }
+ }
+ for(const e of [...enemies]){if(e.dead)continue;for(const other of [...enemies]){if(e===other||e.dead||other.dead)continue;const d=e.group.position.distanceTo(other.group.position);const range=Math.max(5,e.range*.55+other.range*.35);if(d<range){if(e.power>other.power*1.08){absorbFaction(e,other)}else if(other.power>e.power*1.08){absorbFaction(other,e)}}}}
+ enemies=enemies.filter(e=>!e.dead);while(npcs.length<150)spawnNpc();}
+function absorbNpc(owner,n){owner.power+=levels[owner.level].mult;owner.collected++;owner.score=(owner.score||0)+levels[owner.level].mult;if(owner===player)state.score+=levels[owner.level].mult;spawnBurst(n.group.position,owner.color,8);if(owner===player){const f=createUnit(n.group.position.x,n.group.position.z,0,player.color,false);f.team='player';f.power=1;f.speed=24;scene.add(f.group);followers.push(f);if(followers.length>44){scene.remove(followers.shift().group)}}checkEvolution(owner)}
+function absorbFaction(winner,loser){winner.power+=Math.floor(loser.power*.75);winner.collected+=Math.min(80,Math.max(5,Math.floor(loser.power/Math.max(1,levels[winner.level].mult))));spawnBurst(loser.group.position,winner.color,26);scene.remove(loser.group);loser.dead=true;checkEvolution(winner)}
+function defeatEnemy(e){state.kills++;player.power+=Math.floor(e.power*.6);player.collected+=Math.min(80,Math.max(5,Math.floor(e.power/Math.max(1,levels[player.level].mult))));state.score+=e.power*10;spawnBurst(e.group.position,0xffd25b,35);scene.remove(e.group);e.dead=true;checkEvolution(player)}
+function checkEvolution(u){while(u.collected>=levels[u.level].need&&u.level<levels.length-1){u.collected-=levels[u.level].need;u.level++;u.range=levels[u.level].range;u.color=(u.team==='player')?levels[u.level].color:u.color;if(u===player){followers.forEach(f=>scene.remove(f.group));followers=[];showToast(`${levels[u.level].name}`);spawnRing(u.group.position,u.color);}refreshUnitVisual(u)}}
+function updateEnemyVisual(e){const txt=(e.level===0)?`적 세력\n★  ${Math.floor(e.power).toLocaleString()}`:`${levels[e.level].name} | ${levels[e.level].tag}\n${levels[e.level].stars}  ${Math.floor(e.power).toLocaleString()}`;if(!e.label)refreshUnitVisual(e);if(e.label)updateLabel(e.label,txt,e.color)}
+function updateParticles(dt){particles=particles.filter(p=>{p.life-=dt;p.mesh.position.addScaledVector(p.vel,dt);p.mesh.material.opacity=Math.max(0,p.life/p.max);if(p.life<=0){scene.remove(p.mesh);return false}return true})}
+function spawnBurst(pos,color,count){for(let i=0;i<count;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.32,8,8),new THREE.MeshBasicMaterial({color,transparent:true,opacity:1}));m.position.copy(pos);m.position.y=2+Math.random()*5;scene.add(m);particles.push({mesh:m,vel:new THREE.Vector3((Math.random()-.5)*20,Math.random()*14,(Math.random()-.5)*20),life:.5+Math.random()*.45,max:.95})}}
+function spawnRing(pos,color){const ring=new THREE.Mesh(new THREE.TorusGeometry(4,.22,8,120),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.7}));ring.rotation.x=Math.PI/2;ring.position.copy(pos);ring.position.y=.4;scene.add(ring);particles.push({mesh:ring,vel:new THREE.Vector3(0,0,0),life:1.1,max:1.1});let s=1;const id=setInterval(()=>{s+=.35;ring.scale.set(s,s,s);if(s>8)clearInterval(id)},30)}
+function showToast(t){const el=$('#toast');el.textContent=t;el.classList.remove('show');void el.offsetWidth;el.classList.add('show')}
+function updateCamera(dt){const p=player.group.position;const target=new THREE.Vector3(p.x,58,p.z+68);camera.position.lerp(target,1-Math.pow(.001,dt));camera.lookAt(p.x,3.2,p.z)}
+function updateUI(){const l=levels[player.level];$('#levelName').textContent=l.name;$('#levelText').textContent=`${l.tag} ${l.stars}`;$('#powerText').textContent=Math.floor(player.power).toLocaleString();$('#rangeText').textContent=l.range+'m';$('#killText').textContent=state.kills;$('#scoreText').textContent=state.score.toLocaleString();$('#evoBar').style.width=Math.min(100,(player.collected/l.need)*100)+'%';$('#timerText').textContent=formatTime(state.time);if(player.label)updateLabel(player.label,`${l.name} | ${l.tag}\n${l.stars}  ${Math.floor(player.power).toLocaleString()}`,l.color);const ranks=[{name:l.name,p:player.power,c:'#6bf1ff'},...enemies.map(e=>({name:levels[e.level].name,p:e.power,c:'#fff'}))].sort((a,b)=>b.p-a.p).slice(0,5);$('#rankList').innerHTML=ranks.map((r,i)=>`<div class="rank-row"><span>${i+1}. ${r.name}</span><b>${Math.floor(r.p).toLocaleString()}</b></div>`).join('');drawMini()}
+function drawMini(){const ctx=mini.getContext('2d'),w=mini.width=180,h=mini.height=180;ctx.clearRect(0,0,w,h);ctx.fillStyle='rgba(9,18,32,.9)';ctx.fillRect(0,0,w,h);ctx.strokeStyle='rgba(255,255,255,.14)';for(let i=0;i<6;i++){ctx.beginPath();ctx.moveTo(i*w/6,0);ctx.lineTo(i*w/6,h);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i*h/6);ctx.lineTo(w,i*h/6);ctx.stroke()}const map=(v)=>((v/worldSize)+.5)*w;ctx.fillStyle='#777';obstacles.forEach(o=>{ctx.fillRect(map(o.x)-2,map(o.z)-2,4,4)});ctx.fillStyle='#ff4f55';enemies.forEach(e=>{ctx.beginPath();ctx.arc(map(e.group.position.x),map(e.group.position.z),3,0,Math.PI*2);ctx.fill()});ctx.fillStyle='#2f8cff';ctx.beginPath();ctx.arc(map(player.group.position.x),map(player.group.position.z),4,0,Math.PI*2);ctx.fill()}
+function formatTime(t){t=Math.max(0,Math.ceil(t));return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`}
+function endGame(title,desc){if(state.over)return;state.over=true;$('#overTitle').textContent=title;$('#overDesc').textContent=`${desc} 최종 점수 ${state.score.toLocaleString()}, 도달 단계 ${levels[player.level].name}.`;$('#gameOver').classList.add('show')}
+function render(){renderer.render(scene,camera)}
+function resize(){if(!renderer)return;const w=game.clientWidth,h=game.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+addEventListener('resize',resize);function setPaused(v){if(!state||state.over)return;paused=!!v;const o=document.getElementById('pauseOverlay');if(o)o.style.display=paused?'flex':'none';const b=document.getElementById('pauseBtn');if(b)b.textContent=paused?'계속하기':'일시정지';if(clock)clock.getDelta()}function togglePause(){setPaused(!paused)}window.addEventListener('keydown',e=>{const k=String(e.key||'').toLowerCase();if(k==='escape'||k==='p'||e.code==='Escape'||e.code==='KeyP'){e.preventDefault();if(!e.repeat)togglePause();return}if(!paused)keys[e.code]=true},{capture:true});window.addEventListener('keyup',e=>{keys[e.code]=false},{capture:true});
+let joyVec={x:0,y:0};const joy=$('#joy');function joySet(e){const r=joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;const p=e.touches?e.touches[0]:e;let x=(p.clientX-cx)/(r.width*.36),y=(p.clientY-cy)/(r.height*.36);const l=Math.hypot(x,y);if(l>1){x/=l;y/=l}joyVec={x,y}}joy.addEventListener('touchstart',joySet);joy.addEventListener('touchmove',joySet);joy.addEventListener('touchend',()=>joyVec={x:0,y:0});
+</script>
+<div id="pauseOverlay" style="display:none;position:fixed;inset:0;z-index:99;background:rgba(3,7,14,.72);align-items:center;justify-content:center;color:#fff;font:700 34px Arial;text-align:center">일시정지<br><span style="font-size:15px;color:#b9c8df">ESC 또는 P를 눌러 계속하기</span></div></body>
+</html>
