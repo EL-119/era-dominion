@@ -23,13 +23,19 @@ function fitGameCanvas(){
   if(!wrap) return;
   const rect = wrap.getBoundingClientRect();
   if(rect.width < 10 || rect.height < 10) return;
-  const cssRatio = rect.width / rect.height;
-  const nativeRatio = 1200 / 720;
-  // Keep the game camera stable, but scale the canvas to the user's screen so it never gets cut off.
+  const w = Math.max(360, Math.floor(rect.width));
+  const h = Math.max(300, Math.floor(rect.height));
+  if(gameCanvas.width !== w || gameCanvas.height !== h){
+    gameCanvas.width = w;
+    gameCanvas.height = h;
+    VIEW.w = w;
+    VIEW.h = h;
+    updateCamera();
+  }
   gameCanvas.style.width = '100%';
   gameCanvas.style.height = '100%';
 }
-window.addEventListener('resize', fitGameCanvas);
+window.addEventListener('resize', () => requestAnimationFrame(fitGameCanvas));
 
 const evolutions = [
   { name:'시민 리더', value:1, need:100, color:'#2f80ff', accent:'#8fc6ff', size:17, aura:70, magnet:0.55, desc:'기본 캐릭터. 작은 흡수 범위를 가지고 시작합니다.' },
@@ -71,7 +77,7 @@ function showView(id){
   document.body.classList.toggle('playing-mode', id === 'game');
   if(id === 'game'){
     startGame(true);
-    requestAnimationFrame(() => { fitGameCanvas(); window.scrollTo({top:0, behavior:'instant'}); });
+    requestAnimationFrame(() => { fitGameCanvas(); window.scrollTo(0,0); });
   } else {
     window.scrollTo({top:0, behavior:'smooth'});
   }
@@ -120,10 +126,11 @@ function seedEnemies(){
   return Array.from({length:count},(_,i)=>makeEnemy(i));
 }
 function startGame(force=false){
+  const oldFinish=document.querySelector('.finish-card-wrap'); if(oldFinish) oldFinish.remove();
   state.running=true; state.finished=false; state.timeLeft=180; state.score=0; state.level=0; state.stageProgress=1;
   state.player.x=1320; state.player.y=920; state.player.vx=0; state.player.vy=0; state.player.trail=[];
   state.followers=[]; state.citizens=seedCitizens(); state.enemies=seedEnemies(); state.particles=[]; state.floaters=[]; state.shake=0; state.pulse=0; state.dangerFlash=0; state.pointer=null;
-  banner.classList.add('hidden'); showStartNotice(); updateCamera(); updateHud();
+  banner.classList.add('hidden'); showStartNotice(); fitGameCanvas(); updateCamera(); updateHud();
   if(force || !state.loopStarted){ state.loopStarted=true; state.last=performance.now(); requestAnimationFrame(loop); }
 }
 function showStartNotice(){ startNotice.classList.remove('hidden'); setTimeout(()=>startNotice.classList.add('hidden'),1300); }
@@ -141,15 +148,40 @@ function input(dt){
   if(state.keys['arrowleft'] || state.keys['a']) ax -= 1; if(state.keys['arrowright'] || state.keys['d']) ax += 1;
   if(state.keys['arrowup'] || state.keys['w']) ay -= 1; if(state.keys['arrowdown'] || state.keys['s']) ay += 1;
   if(state.pointer){ ax += (state.pointer.x-state.player.x)/230; ay += (state.pointer.y-state.player.y)/230; }
-  const mag=Math.hypot(ax,ay), speed=150+state.level*12;
+  const mag=Math.hypot(ax,ay), speed=112+state.level*9;
   if(mag>.05){ state.player.vx=(ax/mag)*speed; state.player.vy=(ay/mag)*speed; } else { state.player.vx*=.72; state.player.vy*=.72; }
   moveWithCollision(state.player,state.player.vx*dt,state.player.vy*dt,evolutions[state.level].size*.72);
   state.player.trail.push({x:state.player.x,y:state.player.y,life:.35,size:evolutions[state.level].size});
   if(state.player.trail.length>26) state.player.trail.shift();
 }
 function moveWithCollision(o,dx,dy,r){
-  let nx=clamp(o.x+dx,35,WORLD.w-35); if(!isBlocked(nx,o.y,r)) o.x=nx; else o.vx*= -0.12;
-  let ny=clamp(o.y+dy,45,WORLD.h-35); if(!isBlocked(o.x,ny,r)) o.y=ny; else o.vy*= -0.12;
+  const steps = Math.max(1, Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)) / Math.max(5, r*.45)));
+  const sx = dx / steps, sy = dy / steps;
+  for(let i=0;i<steps;i++){
+    let nx = clamp(o.x + sx, 35, WORLD.w - 35);
+    if(!isBlocked(nx, o.y, r)) o.x = nx; else { o.vx *= 0.08; }
+    let ny = clamp(o.y + sy, 45, WORLD.h - 35);
+    if(!isBlocked(o.x, ny, r)) o.y = ny; else { o.vy *= 0.08; }
+    resolveFromBuildings(o, r);
+  }
+}
+function resolveFromBuildings(o,r){
+  for(const b of buildings){
+    const rect=b.block;
+    const nx=clamp(o.x, rect.x, rect.x+rect.w), ny=clamp(o.y, rect.y, rect.y+rect.h);
+    const dx=o.x-nx, dy=o.y-ny;
+    const d=Math.hypot(dx,dy);
+    if(d < r + 1){
+      if(d > .001){
+        const push=(r+1-d); o.x += dx/d*push; o.y += dy/d*push;
+      }else{
+        const left=Math.abs(o.x-rect.x), right=Math.abs(rect.x+rect.w-o.x), top=Math.abs(o.y-rect.y), bottom=Math.abs(rect.y+rect.h-o.y);
+        const m=Math.min(left,right,top,bottom);
+        if(m===left) o.x=rect.x-r-1; else if(m===right) o.x=rect.x+rect.w+r+1; else if(m===top) o.y=rect.y-r-1; else o.y=rect.y+rect.h+r+1;
+      }
+      o.x=clamp(o.x,35,WORLD.w-35); o.y=clamp(o.y,45,WORLD.h-35);
+    }
+  }
 }
 function updateCamera(){
   const targetX=clamp(state.player.x - VIEW.w/2, 0, WORLD.w - VIEW.w);
@@ -303,14 +335,28 @@ function absorbEnemyByPlayer(enemy){
 }
 function hitPlayerByEnemy(enemy){
   const e=evolutions[state.level];
-  const loss=Math.min(Math.max(6, Math.floor(enemyPower(enemy)/6)), Math.max(1, Math.floor(state.stageProgress-1)));
-  state.stageProgress=Math.max(1,state.stageProgress-loss);
+  const ep=enemyPower(enemy), pp=playerPower();
+  if(ep >= pp * 1.12 || state.stageProgress <= 6){
+    dieGame(`${enemy.level+1}단계 적에게 패배`);
+    burst(state.player.x,state.player.y,'#ff6377',90,true);
+    return;
+  }
+  const loss=Math.min(Math.max(8, Math.floor(ep/5)), Math.floor(state.stageProgress));
+  state.stageProgress-=loss;
   state.score=Math.max(0,state.score-loss*e.value);
+  if(state.stageProgress <= 0){ dieGame('세력이 전멸했습니다'); return; }
   state.dangerFlash=1; state.shake=11;
   const d=Math.hypot(state.player.x-enemy.x,state.player.y-enemy.y)||1;
-  state.player.x=clamp(state.player.x+(state.player.x-enemy.x)/d*45,35,WORLD.w-35);
-  state.player.y=clamp(state.player.y+(state.player.y-enemy.y)/d*45,45,WORLD.h-35);
+  moveWithCollision(state.player,(state.player.x-enemy.x)/d*55,(state.player.y-enemy.y)/d*55,e.size*.72);
   addFloater(state.player.x,state.player.y-56,`-${loss}`, '#ff6377'); burst(state.player.x,state.player.y,'#ff6377',32,true);
+}
+function dieGame(reason='패배했습니다'){
+  if(state.finished) return;
+  state.finished=true; state.running=false; state.dangerFlash=1; state.shake=18;
+  const wrap=document.querySelector('.canvas-wrap'); const old=wrap.querySelector('.finish-card-wrap'); if(old) old.remove();
+  const card=document.createElement('div'); card.className='evolution-banner finish-card-wrap';
+  card.innerHTML=`<div class="finish-card danger-card"><h2>GAME OVER</h2><p>${reason}</p><p>최종 단계: ${evolutions[state.level].name}</p><p>최종 점수: ${state.score.toLocaleString()}</p><button class="primary-btn" id="againBtn">다시 도전</button></div>`;
+  wrap.appendChild(card); document.getElementById('againBtn').addEventListener('click',()=>{card.remove();startGame(true);});
 }
 
 function updateFollowers(dt){
@@ -350,7 +396,7 @@ function drawMarket(c,x,y,s=1){ c.save(); c.translate(x,y); c.scale(s,s); c.fill
 function drawTower(c,x,y,s=1){ c.save(); c.translate(x,y); c.scale(s,s); c.fillStyle='rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(0,100,58,18,0,0,Math.PI*2); c.fill(); c.fillStyle='#8f7757'; roundRect(c,-28,10,56,95,9); c.fill(); c.fillStyle='#51301f'; c.beginPath(); c.moveTo(-40,18); c.lineTo(0,-28); c.lineTo(40,18); c.closePath(); c.fill(); c.restore(); }
 function vignette(c){ const g=c.createRadialGradient(state.camera.x+VIEW.w/2,state.camera.y+VIEW.h/2,80,state.camera.x+VIEW.w/2,state.camera.y+VIEW.h/2,Math.max(VIEW.w,VIEW.h)*.78); g.addColorStop(0,'rgba(255,255,255,0)'); g.addColorStop(1,'rgba(0,0,0,.32)'); c.fillStyle=g; c.fillRect(state.camera.x,state.camera.y,VIEW.w,VIEW.h); }
 function drawAura(c,x,y,e){ c.save(); const pulse=1+Math.sin(state.pulse*3)*.025; c.strokeStyle=e.color; c.globalAlpha=.26; c.lineWidth=3; c.setLineDash([16,12]); c.beginPath(); c.arc(x,y,e.aura*pulse,0,Math.PI*2); c.stroke(); c.setLineDash([]); const g=c.createRadialGradient(x,y,18,x,y,e.aura); g.addColorStop(0,e.color+'18'); g.addColorStop(.55,e.color+'0d'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; c.beginPath(); c.arc(x,y,e.aura,0,Math.PI*2); c.fill(); c.restore(); }
-function drawPlayer(c,p,e){ for(const t of state.player.trail){ c.globalAlpha=Math.max(0,t.life)*.22; drawCharacter(c,t.x,t.y,t.size*.9,e.color,e.accent,state.level,true); } c.globalAlpha=1; drawCharacter(c,p.x,p.y,e.size,e.color,e.accent,state.level,false); drawStagePlate(c,p.x,p.y-e.size-58,`${state.level+1}단계 ${e.name}`,`${Math.floor(state.stageProgress)} / ${e.need}`,e.color); }
+function drawPlayer(c,p,e){ for(const t of state.player.trail){ c.globalAlpha=Math.max(0,t.life)*.22; drawCharacter(c,t.x,t.y,t.size*.9,e.color,e.accent,state.level,true); } c.globalAlpha=1; drawCharacter(c,p.x,p.y,e.size,e.color,e.accent,state.level,false); drawStagePlate(c,p.x,p.y-e.size-62,`${state.level+1}단계 ${e.name}`,`전투력 ${Math.floor(playerPower())}`,e.color); }
 function drawCharacter(c,x,y,size,color,accent,level,ghost=false){
   c.save();
   const alpha = ghost ? .22 : 1;
@@ -404,8 +450,8 @@ function drawEnemy(c,o){
   c.strokeStyle=o.color; c.globalAlpha=.25; c.lineWidth=3; c.setLineDash([8,8]);
   c.beginPath(); c.arc(o.x,o.y,78+o.level*18,0,Math.PI*2); c.stroke(); c.setLineDash([]); c.globalAlpha=1;
   drawCharacter(c,o.x,o.y,18+o.level*4,o.color,o.accent,o.level,false);
-  const rel = enemyPower(o) > playerPower()*1.05 ? '위험' : enemyPower(o) < playerPower()*.92 ? '약함' : '비슷';
-  drawStagePlate(c,o.x,o.y-(50+o.level*7),`${o.level+1}단계 적`,`${rel} ${Math.floor(o.progress)}`,o.color);
+  const rel = enemyPower(o) > playerPower()*1.08 ? '위험' : enemyPower(o) < playerPower()*.9 ? '약함' : '비슷';
+  drawStagePlate(c,o.x,o.y-(54+o.level*8),`${o.level+1}단계 적 · ${rel}`,`전투력 ${Math.floor(enemyPower(o))}`,o.color);
   c.restore();
 }
 
