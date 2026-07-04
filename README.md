@@ -1,7 +1,7 @@
-# Era Dominion 3D - Reborn v12
+# Era Dominion 3D - Reborn v13
 
-- 실제 무료 상업 이용 가능 GLB 에셋 적용
-- 리더 기본 모델: RobotExpressive by Tomás Laulhé, CC0
+- 캐릭터 방향 전환: 현재 카메라 시점에서 고퀄로 보이는 2.5D 판타지 리더 스프라이트 적용
+- 외부 GLB/이미지 다운로드 없이 index.html 내부 CanvasTexture로 캐릭터 생성
+- 리더 단계별 얼굴, 머리, 갑옷, 방패, 검, 망토, 왕관, 황제 예복 구분 강화
+- 일반 NPC는 가벼운 모델 유지
 - GitHub 업로드 파일: index.html, README.md
-- assets 폴더 없이 외부 CC0 GLB를 로딩하고, 실패 시 안전 fallback으로 시작
-- 단계별 갑옷, 검, 방패, 망토, 왕관, 황제 장식 추가

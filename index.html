@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Era Dominion 3D - Reborn v12 CC0 Asset Leaders</title>
+  <title>Era Dominion 3D - Reborn v13 Premium 2.5D Leaders</title>
   <style>
     :root{--bg:#090b13;--panel:rgba(10,12,22,.74);--line:rgba(255,255,255,.14);--txt:#f5f7ff;--muted:#aeb7d7;--gold:#ffd36a;--red:#ff657a;--blue:#72a7ff;--green:#63e6a2;}
     *{box-sizing:border-box} html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05060b;color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,Pretendard,Apple SD Gothic Neo,Noto Sans KR,sans-serif;}
@@ -177,40 +177,128 @@ function humanizeLeader(root,stage,isEnemy){
 
 
 
-function makeLeaderModel(stage,isEnemy=false){
- const root=new THREE.Group();
- if(leaderGLBCache[stage]){
-   const model=cloneGLBScene(leaderGLBCache[stage]);
-   model.scale.setScalar(.72+stage*.045);
-   model.position.set(0,.03,0);
-   model.rotation.y=Math.PI;
-   model.traverse(o=>{
-     if(o.isMesh && o.material){
-       o.material=o.material.clone();
-       if(isEnemy)o.material.color.offsetHSL(-.02,.10,-.05);
-       else o.material.color.offsetHSL(.02,.04,.02);
-       o.material.metalness=Math.min(.72,(o.material.metalness||0)+.15);
-       o.material.roughness=Math.max(.22,(o.material.roughness||.55)-.12);
-     }
-   });
-   root.add(model);
-   decorateGLBLeader(root,stage,isEnemy);
-   return root;
+
+const leaderTextureCache=new Map();
+function makePremiumLeaderTexture(stage,isEnemy=false){
+ const key=stage+'-'+(isEnemy?1:0);
+ if(leaderTextureCache.has(key))return leaderTextureCache.get(key);
+ const c=document.createElement('canvas'); c.width=768; c.height=1024;
+ const ctx=c.getContext('2d');
+ ctx.clearRect(0,0,c.width,c.height);
+ const theme=[
+  {cape:'#2452a7',armor:'#72d7ff',cloth:'#315b8f',hair:'#3a2417',gem:'#73e8ff'},
+  {cape:'#2f7d4b',armor:'#9dea7a',cloth:'#416f38',hair:'#6b3b1e',gem:'#b4ff76'},
+  {cape:'#8c4e1f',armor:'#f3b866',cloth:'#744426',hair:'#d7bc7a',gem:'#ffd26d'},
+  {cape:'#5834a6',armor:'#c685ff',cloth:'#41246d',hair:'#171719',gem:'#c99bff'},
+  {cape:'#a66d16',armor:'#ffe177',cloth:'#7a5018',hair:'#7041d9',gem:'#fff176'},
+  {cape:'#8d1828',armor:'#f0eef5',cloth:'#f3e4c8',hair:'#f5f5ff',gem:'#ff4d61'}
+ ][stage];
+ const T=theme, enemyShift=isEnemy;
+ const cape=enemyShift?'#7d1e2f':T.cape, armor=enemyShift?'#d13a50':T.armor, cloth=enemyShift?'#3b1220':T.cloth, gem=enemyShift?'#ff3554':T.gem;
+ function grad(x0,y0,x1,y1,a,b){const g=ctx.createLinearGradient(x0,y0,x1,y1);g.addColorStop(0,a);g.addColorStop(1,b);return g}
+ function shadowPath(){
+   ctx.save();ctx.globalAlpha=.42;ctx.fillStyle='#02030a';ctx.beginPath();ctx.ellipse(384,920,190,55,0,0,Math.PI*2);ctx.fill();ctx.restore();
  }
- // Safe fallback only if remote CC0 GLB cannot load.
- const skin=mat(isEnemy?0xd18c70:0xf0bd98,.58,.02), cloth=mat(isEnemy?0x6d1830:colors[stage],.55,.10);
- const armor=mat(stage>=2?0xd8e3f3:0x63708b,.34,.48), dark=mat(0x121621,.52,.18), hair=mat(0x2a1b13,.65,.04);
- const add=(g,m,pos,rot=[0,0,0],scale=[1,1,1])=>addPart(root,g,m,pos,rot,scale);
- add(new THREE.SphereGeometry(.28,28,18),skin,[0,2.03,.03],[0,0,0],[.86,1.06,.78]);
- add(new THREE.SphereGeometry(.29,18,10),hair,[0,2.20,-.02],[0,0,0],[.92,.38,.82]);
- add(new THREE.CapsuleGeometry(.30,.58,18,24),cloth,[0,1.27,0],[0,0,0],[.95,1,.62]);
- add(new THREE.CapsuleGeometry(.33,.36,18,20),armor,[0,1.47,.04],[0,0,0],[1.08,.82,.46]);
- add(new THREE.CapsuleGeometry(.09,.45,12,12),skin,[-.46,1.23,.02],[0,0,.25]);
- add(new THREE.CapsuleGeometry(.09,.45,12,12),skin,[.46,1.23,.02],[0,0,-.25]);
- add(new THREE.CapsuleGeometry(.11,.55,12,12),dark,[-.16,.56,.02]);
- add(new THREE.CapsuleGeometry(.11,.55,12,12),dark,[.16,.56,.02]);
- decorateGLBLeader(root,stage,isEnemy);
+ function poly(points,fill,stroke='rgba(0,0,0,.65)',lw=10){
+   ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);for(const p of points.slice(1))ctx.lineTo(p[0],p[1]);ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.lineWidth=lw;ctx.strokeStyle=stroke;ctx.stroke();
+ }
+ function ellipse(x,y,rx,ry,fill,stroke='rgba(0,0,0,.60)',lw=8){
+   ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();ctx.lineWidth=lw;ctx.strokeStyle=stroke;ctx.stroke();
+ }
+ function rect(x,y,w,h,fill,stroke='rgba(0,0,0,.55)',lw=8,r=0){
+   ctx.beginPath();
+   if(ctx.roundRect)ctx.roundRect(x,y,w,h,r);else ctx.rect(x,y,w,h);
+   ctx.fillStyle=fill;ctx.fill();ctx.lineWidth=lw;ctx.strokeStyle=stroke;ctx.stroke();
+ }
+ shadowPath();
+ // big readable fantasy silhouette
+ if(stage>=3){
+   poly([[235,280],[533,280],[620,888],[384,965],[148,888]],grad(250,260,560,920,cape,'#12051b'),'rgba(0,0,0,.65)',12);
+   for(let i=0;i<6;i++){ctx.globalAlpha=.18;poly([[260+i*36,310],[300+i*20,850],[230+i*55,900]],'#ffffff','rgba(0,0,0,0)',1);ctx.globalAlpha=1;}
+ }
+ // legs and boots
+ rect(300,660,72,250,grad(300,650,360,900,'#202838','#090b14'),'#05060b',9,26);
+ rect(398,660,72,250,grad(398,650,460,900,'#202838','#090b14'),'#05060b',9,26);
+ rect(256,875,132,54,'#0b0e18','#05060b',8,20); rect(382,875,132,54,'#0b0e18','#05060b',8,20);
+ // robe/waist
+ poly([[270,508],[498,508],[536,736],[384,805],[232,736]],grad(280,500,520,790,cloth,'#121929'),'#05060b',11);
+ // torso armor
+ poly([[248,286],[520,286],[488,540],[384,606],[280,540]],grad(260,270,510,580,armor,'#2a344d'),'#03050b',13);
+ poly([[305,326],[463,326],[438,510],[384,560],[330,510]],grad(305,326,463,540,'rgba(255,255,255,.65)',armor),'rgba(0,0,0,.45)',6);
+ rect(284,552,200,52,grad(284,552,484,604,'#f2c35a','#8a5a16'),'#05060b',8,18);
+ // center gem / chest detail
+ ellipse(384,435,38,52,grad(350,390,410,480,'#ffffff',gem),'#09121c',7);
+ for(let i=0;i<stage+2;i++){ellipse(303+i*34,590,12,16,gem,'rgba(0,0,0,.45)',4);}
+ // shoulders and arms
+ ellipse(240,340,72,58,grad(190,300,290,380,'#ffffff',armor),'#03050b',10);
+ ellipse(528,340,72,58,grad(490,300,570,380,'#ffffff',armor),'#03050b',10);
+ rect(190,382,70,230,grad(190,380,260,610,armor,'#20283a'),'#03050b',10,35);
+ rect(508,382,70,230,grad(508,380,578,610,armor,'#20283a'),'#03050b',10,35);
+ ellipse(218,628,45,45,'#efc19f','#05060b',8); ellipse(550,628,45,45,'#efc19f','#05060b',8);
+ // shield and sword for stages
+ if(stage>=1){
+   poly([[148,410],[245,445],[224,660],[151,725],[82,660],[58,445]],grad(70,410,240,725,armor,'#27324b'),'#03050b',10);
+   ellipse(151,555,34,48,gem,'#10131c',6);
+   rect(578,300,30,390,grad(578,300,610,690,'#fff1a8','#c98922'),'#03050b',7,12);
+   poly([[593,205],[646,324],[540,324]],grad(560,205,630,324,'#f8fbff','#aab5c8'),'#03050b',8);
+ }
+ // neck and head
+ rect(346,226,76,74,'#efbd99','#05060b',8,24);
+ ellipse(384,178,112,132,'#efbd99','#05060b',12);
+ // hair shape
+ poly([[278,162],[307,72],[382,45],[462,76],[496,168],[462,128],[438,98],[392,122],[348,92],[310,130]],grad(280,50,500,180,T.hair,'#120b08'),'#03050b',10);
+ for(let i=0;i<7;i++){
+   poly([[300+i*28,112],[315+i*23,210],[340+i*15,125]],grad(300,110,500,210,T.hair,'#1a100c'),'rgba(0,0,0,.35)',4);
+ }
+ // face details large enough to read in top-down
+ ellipse(346,174,16,20,'#11131b','rgba(0,0,0,0)',1);
+ ellipse(422,174,16,20,'#11131b','rgba(0,0,0,0)',1);
+ rect(325,144,48,9,'#281612','rgba(0,0,0,0)',1,4);
+ rect(397,144,48,9,'#281612','rgba(0,0,0,0)',1,4);
+ poly([[384,178],[368,220],[400,220]],'#d99b78','rgba(0,0,0,.25)',4);
+ ctx.beginPath();ctx.arc(384,240,38,0.10*Math.PI,0.90*Math.PI);ctx.lineWidth=7;ctx.strokeStyle='#7b342d';ctx.stroke();
+ // stage headgear
+ if(stage>=2){
+   rect(302,91,164,42,grad(302,91,466,133,'#f8fbff','#a8b8d0'),'#03050b',8,12);
+   for(let x of [330,384,438])poly([[x,90],[x+18,35],[x+36,90]],grad(x,35,x+36,90,'#ffffff','#a9b7cf'),'#03050b',6);
+ }
+ if(stage>=4){
+   rect(298,70,172,42,grad(298,70,470,112,'#ffe991','#a86f15'),'#03050b',8,14);
+   for(let x of [306,350,394,438])poly([[x,70],[x+20,8],[x+42,70]],grad(x,8,x+42,70,'#fff2a5','#c8891d'),'#03050b',6);
+   ellipse(384,40,20,25,gem,'#03050b',5);
+ }
+ if(stage>=5){
+   ctx.save();ctx.globalAlpha=.95;
+   poly([[384,610],[570,706],[384,930],[198,706]],grad(200,610,570,930,'rgba(255,255,255,.75)','rgba(255,210,110,.45)'),'rgba(255,255,255,.18)',4);
+   ctx.restore();
+ }
+ // outline + rim light
+ ctx.save();ctx.globalCompositeOperation='source-atop';ctx.globalAlpha=.18;ctx.fillStyle='#ffffff';ctx.fillRect(250,70,130,830);ctx.restore();
+ const tex=new THREE.CanvasTexture(c); tex.colorSpace=THREE.SRGBColorSpace; tex.anisotropy=8; tex.needsUpdate=true;
+ leaderTextureCache.set(key,tex); return tex;
+}
+function makePremiumLeaderModel(stage,isEnemy=false){
+ const root=new THREE.Group();
+ const shadow=mesh(new THREE.CircleGeometry(.95+stage*.08,48),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.32,depthWrite:false}));
+ shadow.rotation.x=-Math.PI/2; shadow.position.y=.018; root.add(shadow);
+ const aura=mesh(new THREE.RingGeometry(.78+stage*.06,.86+stage*.06,64),new THREE.MeshBasicMaterial({color:isEnemy?0xff3554:0x53c7ff,transparent:true,opacity:.42,side:THREE.DoubleSide,depthWrite:false}));
+ aura.rotation.x=-Math.PI/2; aura.position.y=.025; root.add(aura);
+ const matSprite=new THREE.SpriteMaterial({map:makePremiumLeaderTexture(stage,isEnemy),transparent:true,depthTest:true,depthWrite:false});
+ const sp=new THREE.Sprite(matSprite);
+ sp.position.set(0,1.72,0);
+ const size=2.35+stage*.16; sp.scale.set(size*.78,size,1);
+ root.add(sp);
+ // small 3D weapon shine so it still feels in-world
+ if(stage>=1){
+   const m=polishedMat(0xffd26b,.25,.58);
+   const sword=mesh(new THREE.BoxGeometry(.045,1.15,.045),m,.82,1.20,.06); sword.rotation.z=-.45; root.add(sword);
+ }
+ root.userData.modelQuality='v13-premium-painted-2_5d-fantasy-leader';
  return root;
+}
+
+function makeLeaderModel(stage,isEnemy=false){
+ return makePremiumLeaderModel(stage,isEnemy);
 }
 
 function makeNpc(){
@@ -261,10 +349,7 @@ function startGame(){
  $('loading').style.display='flex';
  setTimeout(async()=>{
    try{
-     await Promise.race([
-       preloadLeaderGLB(),
-       new Promise(resolve=>setTimeout(()=>resolve(false),5000))
-     ]);
+     // v13 uses built-in premium 2.5D leader sprites, no network model preload needed.
    }catch(e){
      console.warn('Leader preload skipped.', e);
    }
