@@ -1,6 +1,7 @@
-# Era Dominion 3D - Reborn v14
+# Era Dominion 3D - Reborn v15
 
-- 생성한 판타지 리더 캐릭터 아트를 실제 게임 리더 스프라이트로 적용
-- 단계별 리더 아트 5종과 황제 변형 포함
-- 외부 파일 없이 index.html 안에 이미지 데이터 내장
-- GitHub 업로드: index.html, README.md
+- 새로 제작한 6단계 리더 캐릭터 아트를 실제 게임 리더에 적용
+- 시민 리더, 도시 대장, 구역 지배자, 도시 군주, 도시의 왕, 도시의 황제 단계별 아트 분리
+- 현재 카메라 시점에서 2.5D/3D 느낌이 나도록 바닥 오라, 그림자, 후광 추가
+- 외부 이미지 파일 없이 index.html 안에 이미지 데이터 내장
+- GitHub 업로드 파일: index.html, README.md
