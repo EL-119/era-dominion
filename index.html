@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>에라 도미니언 3D v28 Embedded Models</title>
+  <title>에라 도미니언 3D v29 Button Fix</title>
   <style>
     :root{
       --bg:#07111f;--panel:rgba(8,16,30,.82);--panel2:rgba(10,22,42,.92);--line:rgba(150,205,255,.25);
@@ -313,6 +313,14 @@ window.EraPremiumLeaders = (function(){
   window.makePremiumLeaderV25 = makePremiumLeader;
 })();
 </script>
+
+<style id="era-v29-button-fix">
+.hero-actions{z-index:50 !important; position:absolute !important; pointer-events:auto !important;}
+.hero-actions .btn{position:relative !important; z-index:60 !important; pointer-events:auto !important;}
+.hero-art,.fake-town,.orb{pointer-events:none !important;}
+#home .btn,#home button{pointer-events:auto !important;}
+</style>
+
 </head>
 <body>
 <div id="app">
@@ -573,11 +581,49 @@ console.log('Era Dominion v23-singlefile loaded: premium leader code is inlined.
 </script>
 
 <script>
-console.log('Era Dominion v28 embedded GLB model version loaded');
+console.log('Era Dominion v29 button-fix embedded GLB version loaded');
 window.addEventListener('error', function(e){
   console.error('Era Dominion v25 error:', e.message, e.filename, e.lineno);
 });
 </script>
+
+<script id="era-v29-start-fallback">
+(function(){
+  function showGameScreen(){
+    var home=document.getElementById('home');
+    var game=document.getElementById('game');
+    if(home) home.classList.remove('active');
+    if(game) game.classList.add('active');
+    document.body.classList.add('game-mode');
+    window.scrollTo(0,0);
+  }
+  function bind(){
+    var btn=document.getElementById('startBtn');
+    if(btn && !btn.dataset.v29Bound){
+      btn.dataset.v29Bound='1';
+      btn.style.pointerEvents='auto';
+      btn.style.position='relative';
+      btn.style.zIndex='9999';
+      btn.addEventListener('click', function(ev){
+        ev.preventDefault();
+        ev.stopPropagation();
+        showGameScreen();
+        setTimeout(function(){
+          try{
+            if(typeof window.startGame === 'function') window.startGame();
+            var canvas=document.getElementById('world');
+            if(canvas) canvas.focus && canvas.focus();
+          }catch(e){ console.error('v29 start fallback error', e); }
+        }, 30);
+      }, true);
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bind);
+  else bind();
+  window.addEventListener('load', bind);
+})();
+</script>
+
 </body>
 </html>
 
