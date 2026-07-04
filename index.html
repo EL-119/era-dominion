@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Era Dominion 3D - Reborn v10 Safe GLB Start</title>
+  <title>Era Dominion 3D - Reborn v11 Button Hotfix</title>
   <style>
     :root{--bg:#090b13;--panel:rgba(10,12,22,.74);--line:rgba(255,255,255,.14);--txt:#f5f7ff;--muted:#aeb7d7;--gold:#ffd36a;--red:#ff657a;--blue:#72a7ff;--green:#63e6a2;}
     *{box-sizing:border-box} html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05060b;color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,Pretendard,Apple SD Gothic Neo,Noto Sans KR,sans-serif;}
@@ -21,14 +21,13 @@
 <body>
 <div id="game"></div>
 <div id="loading" class="loading"><div>왕국 생성 중<div class="bar"><span></span></div></div></div>
-<div id="menu" class="screen"><div class="card"><h1>ERA DOMINION</h1><p class="subtitle">이전 3D 카메라 시점은 유지하고, 리더 캐릭터를 단일 HTML 내장형 사람형 3D 메시 스타일로 다시 만든 버전입니다.</p><div class="row"><button id="startBtn" class="btn">게임 시작</button><button id="howBtn" class="btn secondary">조작 보기</button></div><p class="small">이동: <span class="kbd">WASD</span> 또는 방향키 · 일시정지: <span class="kbd">Esc</span> / <span class="kbd">P</span><br>플레이어와 적 리더만 흡수 성장합니다. 일반 NPC끼리는 서로 흡수하지 않습니다.</p></div></div>
-<div id="help" class="screen hidden"><div class="card"><h1 style="font-size:44px">조작 안내</h1><p class="subtitle">약한 NPC와 약한 적 리더에게 가까이 가면 자동으로 흡수합니다. 강한 적에게 닿으면 피해를 입습니다. 리더 단계가 오를수록 외형이 확실하게 바뀝니다.</p><div class="row"><button id="backBtn" class="btn">돌아가기</button></div></div></div>
-<div id="pause" class="screen hidden"><div class="card"><h1 style="font-size:48px">일시정지</h1><p class="subtitle">게임을 계속하거나 처음부터 다시 시작할 수 있습니다.</p><div class="row"><button id="resumeBtn" class="btn">계속하기</button><button id="restartBtn" class="btn secondary">다시하기</button></div></div></div>
-<div id="over" class="screen hidden"><div class="card"><h1 style="font-size:48px">게임 오버</h1><p id="overText" class="subtitle"></p><div class="row"><button id="againBtn" class="btn">다시하기</button></div></div></div>
-<div id="hud"><div class="pill"><div class="title" id="stageName">시민 리더</div><div class="stats"><span class="stat">점수 <b id="score">0</b></span><span class="stat">세력 <b id="power">1</b></span><span class="stat">단계 <b id="stage">1</b>/6</span><span class="stat">남은 리더 <b id="enemyCount">5</b></span></div></div><div id="rankPanel" class="pill"></div></div><button id="pauseBtn" class="btn secondary">일시정지</button><div id="mobile"><div class="knob" id="knob"></div></div>
+<div id="menu" class="screen"><div class="card"><h1>ERA DOMINION</h1><p class="subtitle">이전 3D 카메라 시점은 유지하고, 리더 캐릭터를 단일 HTML 내장형 사람형 3D 메시 스타일로 다시 만든 버전입니다.</p><div class="row"><button id="startBtn" onclick="window.startGame&&window.startGame()" class="btn">게임 시작</button><button id="howBtn" onclick="document.getElementById(&quot;help&quot;).classList.remove(&quot;hidden&quot;)" class="btn secondary">조작 보기</button></div><p class="small">이동: <span class="kbd">WASD</span> 또는 방향키 · 일시정지: <span class="kbd">Esc</span> / <span class="kbd">P</span><br>플레이어와 적 리더만 흡수 성장합니다. 일반 NPC끼리는 서로 흡수하지 않습니다.</p></div></div>
+<div id="help" class="screen hidden"><div class="card"><h1 style="font-size:44px">조작 안내</h1><p class="subtitle">약한 NPC와 약한 적 리더에게 가까이 가면 자동으로 흡수합니다. 강한 적에게 닿으면 피해를 입습니다. 리더 단계가 오를수록 외형이 확실하게 바뀝니다.</p><div class="row"><button id="backBtn" onclick="document.getElementById(&quot;help&quot;).classList.add(&quot;hidden&quot;)" class="btn">돌아가기</button></div></div></div>
+<div id="pause" class="screen hidden"><div class="card"><h1 style="font-size:48px">일시정지</h1><p class="subtitle">게임을 계속하거나 처음부터 다시 시작할 수 있습니다.</p><div class="row"><button id="resumeBtn" onclick="window.togglePause&&window.togglePause()" class="btn">계속하기</button><button id="restartBtn" onclick="window.startGame&&window.startGame()" class="btn secondary">다시하기</button></div></div></div>
+<div id="over" class="screen hidden"><div class="card"><h1 style="font-size:48px">게임 오버</h1><p id="overText" class="subtitle"></p><div class="row"><button id="againBtn" onclick="window.startGame&&window.startGame()" class="btn">다시하기</button></div></div></div>
+<div id="hud"><div class="pill"><div class="title" id="stageName">시민 리더</div><div class="stats"><span class="stat">점수 <b id="score">0</b></span><span class="stat">세력 <b id="power">1</b></span><span class="stat">단계 <b id="stage">1</b>/6</span><span class="stat">남은 리더 <b id="enemyCount">5</b></span></div></div><div id="rankPanel" class="pill"></div></div><button id="pauseBtn" onclick="window.togglePause&&window.togglePause()" class="btn secondary">일시정지</button><div id="mobile"><div class="knob" id="knob"></div></div>
 <script type="module">
 import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
-import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 let scene,camera,renderer,clock,player,units=[],buildings=[],labels=[],gameState='menu',keys={},joy={x:0,y:0},worldSize=130,lastSpawn=0,leaderGLBCache=[];
 const $=id=>document.getElementById(id); const stageNames=['시민 리더','도시 대장','구역 지배자','도시 군주','도시의 왕','도시의 황제'];
 const stageScore=[0,80,190,360,600,930]; const colors=[0x7dd3fc,0x88e070,0xf3b55b,0xd482ff,0xffdf70,0xff6464];
@@ -48,7 +47,8 @@ function cloneGLBScene(src){
 async function preloadLeaderGLB(){
  if(leaderGLBCache.length===6)return true;
  try{
-   const loader=new GLTFLoader();
+   const mod=await import('https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js');
+   const loader=new mod.GLTFLoader();
    const loaded=[];
    for(const b64 of LEADER_GLB_B64){
      const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
@@ -284,7 +284,21 @@ function showMenu(){gameState='menu';$('loading').style.display='none';$('menu')
 function togglePause(){if(gameState==='playing'){gameState='paused';$('pause').classList.remove('hidden')}else if(gameState==='paused'){gameState='playing';$('pause').classList.add('hidden');clock.getDelta();loop();}}
 function gameOver(msg){if(gameState==='over')return;gameState='over';$('overText').textContent=msg;$('over').classList.remove('hidden');$('pauseBtn').style.display='none'}
 addEventListener('resize',()=>{if(camera&&renderer){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}});addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Escape'||e.code==='KeyP')togglePause()});addEventListener('keyup',e=>keys[e.code]=false);
-$('startBtn').onclick=startGame;$('howBtn').onclick=()=>{$('help').classList.remove('hidden')};$('backBtn').onclick=()=>{$('help').classList.add('hidden')};$('resumeBtn').onclick=togglePause;$('restartBtn').onclick=startGame;$('againBtn').onclick=startGame;$('pauseBtn').onclick=togglePause;
+
+window.startGame=startGame; window.togglePause=togglePause;
+function bindButtons(){
+ const bind=(id,fn)=>{const el=$(id); if(!el)return; el.onclick=fn; el.addEventListener('pointerup',e=>{e.preventDefault();fn(e);},{passive:false});};
+ bind('startBtn',startGame);
+ bind('howBtn',()=>{$('help').classList.remove('hidden')});
+ bind('backBtn',()=>{$('help').classList.add('hidden')});
+ bind('resumeBtn',togglePause);
+ bind('restartBtn',startGame);
+ bind('againBtn',startGame);
+ bind('pauseBtn',togglePause);
+}
+bindButtons();
+addEventListener('DOMContentLoaded',bindButtons);
+
 const mob=$('mobile'),knob=$('knob');let touch=false;function setJoy(e){const r=mob.getBoundingClientRect();const p=e.touches?e.touches[0]:e;let x=p.clientX-(r.left+r.width/2),y=p.clientY-(r.top+r.height/2);const l=Math.hypot(x,y),m=48;if(l>m){x=x/l*m;y=y/l*m}joy.x=x/m;joy.y=y/m;knob.style.transform=`translate(${x}px,${y}px)`}mob.addEventListener('pointerdown',e=>{touch=true;mob.setPointerCapture(e.pointerId);setJoy(e)});mob.addEventListener('pointermove',e=>{if(touch)setJoy(e)});mob.addEventListener('pointerup',()=>{touch=false;joy.x=joy.y=0;knob.style.transform='translate(0,0)'});
 </script>
 </body>

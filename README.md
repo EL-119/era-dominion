@@ -1,6 +1,7 @@
-# Era Dominion 3D - Reborn v10
+# Era Dominion 3D - Reborn v11
 
-- v9 시작 불가 문제 수정
-- GLB 내장 모델 로딩 실패 시에도 게임이 반드시 시작되도록 fallback 처리
-- 리더는 GLB 로딩 성공 시 내장 GLB 사람형 모델 사용
+- v10에서 버튼이 반응하지 않는 문제 수정
+- GLTFLoader 정적 import 제거
+- GLB는 게임 시작 후 동적 로딩, 실패해도 fallback으로 시작
+- 시작/조작방법/일시정지/다시하기 버튼 이벤트 중복 바인딩
 - GitHub 업로드 파일: index.html, README.md
