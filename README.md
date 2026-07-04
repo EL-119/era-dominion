@@ -1,5 +1,3 @@
-# Era Dominion 3D Reborn v7
+# Era Dominion 3D Reborn v8
 
-단일 index.html 구조를 유지하면서 리더 캐릭터를 원통형 오뚜기 느낌이 아닌 사람형 3D 메시 비율로 교체한 버전입니다.
-
-업로드 파일: index.html, README.md
+고퀄 사람형 리더 캐릭터 모델링 개선 버전입니다. GitHub/Vercel에는 index.html과 README.md만 업로드하세요.

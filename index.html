@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Era Dominion 3D - Reborn v7</title>
+  <title>Era Dominion 3D - Reborn v8</title>
   <style>
     :root{--bg:#090b13;--panel:rgba(10,12,22,.74);--line:rgba(255,255,255,.14);--txt:#f5f7ff;--muted:#aeb7d7;--gold:#ffd36a;--red:#ff657a;--blue:#72a7ff;--green:#63e6a2;}
     *{box-sizing:border-box} html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05060b;color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,Pretendard,Apple SD Gothic Neo,Noto Sans KR,sans-serif;}
@@ -111,78 +111,101 @@ function makeLeaderModel(stage,isEnemy=false){
  const root=new THREE.Group();
  const palette={
   skin:isEnemy?0xd89572:0xf0bd9b,
-  hair:[0x2d1b12,0x6c3b1d,0xd2ad63,0x15151a,0x4830a0,0xf1f3ff][stage],
-  cloth:isEnemy?0x451625:[0x315a7c,0x306b42,0x5c416e,0x41326f,0x574112,0xefe6d2][stage],
-  cloth2:isEnemy?0x250912:0x152642,
-  metal:stage>=2?0xd7e4f2:0x8090aa,
-  dark:0x101521,
-  gold:0xffd46b,
-  accent:isEnemy?0xff3f5f:0x61c7ff,
-  cape:isEnemy?0x791832:0x263f9f
+  hair:[0x2b1a12,0x6b3c20,0xd6b46b,0x15151a,0x4732a5,0xf3f5ff][stage],
+  cloth:isEnemy?0x441421:[0x315a7c,0x2f7048,0x5b4070,0x473a81,0x6b4d18,0xf1e9d8][stage],
+  cloth2:isEnemy?0x230911:0x12233f,
+  metal:stage>=2?0xdbe8f7:0x8798b4,
+  dark:0x0d111c,
+  leather:0x2a1710,
+  gold:0xffd66f,
+  accent:isEnemy?0xff3d5e:0x62c8ff,
+  cape:isEnemy?0x7b1834:0x263f9f
  };
- const M={skin:mat(palette.skin,.58,.02),hair:mat(palette.hair,.68,.04),cloth:mat(palette.cloth,.6,.08),cloth2:mat(palette.cloth2,.65,.06),metal:polishedMat(palette.metal,.32,.48),dark:mat(palette.dark,.52,.16),gold:polishedMat(palette.gold,.26,.64),accent:gem(palette.accent),cape:mat(palette.cape,.66,.04)};
+ const M={skin:mat(palette.skin,.56,.03),hair:mat(palette.hair,.7,.035),cloth:mat(palette.cloth,.58,.10),cloth2:mat(palette.cloth2,.62,.08),metal:polishedMat(palette.metal,.30,.55),dark:mat(palette.dark,.50,.18),leather:mat(palette.leather,.64,.05),gold:polishedMat(palette.gold,.24,.66),accent:gem(palette.accent),cape:mat(palette.cape,.64,.04),face:mat(0x4a2522,.62,.02)};
  const add=(g,m,p,r=[0,0,0],sc=[1,1,1])=>addPart(root,g,m,p,r,sc);
- const limb=(name,x,y,z,len,top,bottom,rot,material)=>{const o=add(new THREE.CylinderGeometry(top,bottom,len,18,3),material,[x,y,z],rot);o.name=name;return o;};
- const ell=(name,r,matr,p,sc=[1,1,1],rot=[0,0,0])=>{const o=add(new THREE.SphereGeometry(r,32,20),matr,p,rot,sc);o.name=name;return o;};
- const box=(name,w,h,d,matr,p,rot=[0,0,0])=>{const o=add(new THREE.BoxGeometry(w,h,d),matr,p,rot);o.name=name;return o;};
- const s=1.18+stage*.07; root.scale.setScalar(s);
- // true humanoid proportions: long legs, narrow waist, wider shoulders, small head
- limb('left-thigh',-.23,.58,.02,.70,.145,.18,[0,0,.045],M.cloth2);
- limb('right-thigh',.23,.58,.02,.70,.145,.18,[0,0,-.045],M.cloth2);
- limb('left-shin',-.24,.18,.04,.58,.115,.145,[0,0,-.025],M.dark);
- limb('right-shin',.24,.18,.04,.58,.115,.145,[0,0,.025],M.dark);
- box('left-foot',.28,.13,.50,M.dark,[-.25,.03,.15]); box('right-foot',.28,.13,.50,M.dark,[.25,.03,.15]);
- ell('hips',.34,M.cloth,[0,.91,.02],[1.08,.55,.78]);
- limb('waist',0,1.13,.02,.38,.25,.34,[0,0,0],M.cloth);
- limb('ribcage',0,1.43,.03,.58,.43,.30,[0,0,0],stage>=2?M.metal:M.cloth);
- ell('chest-highlight',.18,M.accent,[0,1.49,.38],[.75,.38,.18]);
- box('shoulder-line',1.10,.16,.32,M.metal,[0,1.75,.03]);
- ell('left-shoulder',.19,M.metal,[-.62,1.71,.04],[1.25,.72,1]); ell('right-shoulder',.19,M.metal,[.62,1.71,.04],[1.25,.72,1]);
- limb('left-upper-arm',-.72,1.38,.08,.55,.105,.13,[0,0,.32],stage>=2?M.metal:M.cloth2);
- limb('right-upper-arm',.72,1.38,.08,.55,.105,.13,[0,0,-.32],stage>=2?M.metal:M.cloth2);
- ell('left-elbow',.095,M.skin,[-.83,1.10,.12],[1,.85,1]); ell('right-elbow',.095,M.skin,[.83,1.10,.12],[1,.85,1]);
- limb('left-forearm',-.88,.91,.13,.42,.085,.105,[0,0,-.04],M.skin);
- limb('right-forearm',.88,.91,.13,.42,.085,.105,[0,0,.04],M.skin);
- ell('left-hand',.095,M.skin,[-.88,.66,.17],[.95,.72,1.15]); ell('right-hand',.095,M.skin,[.88,.66,.17],[.95,.72,1.15]);
- for(const side of [-1,1]) for(let i=-1;i<=1;i++) limb('finger',side*(.88+i*.025),.58,.24,.105,.012,.017,[1.1,0,0],M.skin);
- limb('neck',0,1.96,.03,.22,.105,.12,[0,0,0],M.skin);
- ell('head',.31,M.skin,[0,2.24,.05],[.88,1.08,.80]);
- ell('left-ear',.045,M.skin,[-.29,2.23,.02],[.50,1.1,.75]); ell('right-ear',.045,M.skin,[.29,2.23,.02],[.50,1.1,.75]);
- add(new THREE.ConeGeometry(.045,.12,12),M.skin,[0,2.22,.315],[Math.PI/2,0,0]);
- ell('left-eye',.026,M.dark,[-.095,2.27,.315],[1,.65,.35]); ell('right-eye',.026,M.dark,[.095,2.27,.315],[1,.65,.35]);
- box('left-brow',.12,.018,.018,M.dark,[-.095,2.36,.305],[0,0,-.16]); box('right-brow',.12,.018,.018,M.dark,[.095,2.36,.305],[0,0,.16]);
- box('mouth',.14,.016,.018,mat(0x7b342f,.65,.02),[0,2.10,.315]);
- // hair is sculpted into a cap, bangs and rear volume rather than a ball
- ell('hair-cap',.33,M.hair,[0,2.43,-.02],[1.04,.43,.86]); ell('back-hair',.23,M.hair,[0,2.27,-.25],[1.12,1.05,.64]);
- for(let i=-3;i<=3;i++) add(new THREE.ConeGeometry(.045,.28,10),M.hair,[i*.075,2.38,.23],[.65,0,-i*.08]);
- ell('side-lock-l',.055,M.hair,[-.27,2.19,.12],[.7,1.65,.7]); ell('side-lock-r',.055,M.hair,[.27,2.19,.12],[.7,1.65,.7]);
- // readable fantasy equipment by stage
+ const cyl=(name,r1,r2,h,m,p,r=[0,0,0],seg=24)=>{const o=add(new THREE.CylinderGeometry(r1,r2,h,seg,3),m,p,r);o.name=name;return o;};
+ const sph=(name,r,m,p,sc=[1,1,1],rot=[0,0,0],seg=32)=>{const o=add(new THREE.SphereGeometry(r,seg,Math.max(12,Math.floor(seg*.65))),m,p,rot,sc);o.name=name;return o;};
+ const box=(name,w,h,d,m,p,r=[0,0,0])=>{const o=add(new THREE.BoxGeometry(w,h,d),m,p,r);o.name=name;return o;};
+ const plate=(name,w,h,d,m,p,r=[0,0,0])=>{const o=box(name,w,h,d,m,p,r); if(o.geometry){o.geometry.computeVertexNormals();} return o;};
+ const s=1.20+stage*.075; root.scale.setScalar(s);
+
+ // V8: angular human silhouette, not toy-cylinder.  Long legs, slim waist, broad shoulders.
+ // legs: split thighs/shins with knees and actual boots
+ cyl('left-thigh',.115,.155,.72,M.cloth2,[-.21,.62,.02],[0,0,.05],24);
+ cyl('right-thigh',.115,.155,.72,M.cloth2,[.21,.62,.02],[0,0,-.05],24);
+ sph('left-knee',.095,M.metal,[-.22,.27,.04],[1,.72,1],undefined,20); sph('right-knee',.095,M.metal,[.22,.27,.04],[1,.72,1],undefined,20);
+ cyl('left-shin',.095,.125,.56,M.dark,[-.22,.13,.05],[0,0,-.02],24);
+ cyl('right-shin',.095,.125,.56,M.dark,[.22,.13,.05],[0,0,.02],24);
+ plate('left-boot',.24,.14,.47,M.dark,[-.23,-.10,.16]); plate('right-boot',.24,.14,.47,M.dark,[.23,-.10,.16]);
+ plate('left-boot-toe',.28,.08,.26,M.dark,[-.23,-.10,.36]); plate('right-boot-toe',.28,.08,.26,M.dark,[.23,-.10,.36]);
+
+ // pelvis / waist / chest are hard-surface tapered armor plates so the body reads human, not round.
+ sph('pelvis',.29,M.cloth,[0,.89,.02],[1.15,.45,.72],undefined,32);
+ plate('waist-core',.43,.34,.28,M.cloth,[0,1.13,.03]);
+ plate('abdomen-front',.50,.34,.055,M.cloth2,[0,1.18,.205]);
+ plate('ribcage-core',.72,.56,.34,stage>=2?M.metal:M.cloth,[0,1.47,.03]);
+ plate('left-chest-angle',.31,.42,.06,stage>=2?M.metal:M.cloth2,[-.18,1.52,.225],[0,0,.10]);
+ plate('right-chest-angle',.31,.42,.06,stage>=2?M.metal:M.cloth2,[.18,1.52,.225],[0,0,-.10]);
+ plate('collar',.86,.12,.28,M.metal,[0,1.80,.05]);
+ sph('chest-gem',.055,M.accent,[0,1.55,.285],[1,.70,.35],undefined,16);
+ plate('belt',.70,.09,.30,M.gold,[0,1.02,.22]);
+ plate('belt-buckle',.14,.13,.06,M.accent,[0,1.02,.39]);
+
+ // shoulders/arms: jointed with elbows, hands and fingers.
+ sph('left-pauldron',.20,M.metal,[-.58,1.74,.04],[1.45,.66,1.05],undefined,24); sph('right-pauldron',.20,M.metal,[.58,1.74,.04],[1.45,.66,1.05],undefined,24);
+ cyl('left-upper-arm',.085,.115,.56,stage>=2?M.metal:M.cloth2,[-.69,1.40,.08],[0,0,.30],22);
+ cyl('right-upper-arm',.085,.115,.56,stage>=2?M.metal:M.cloth2,[.69,1.40,.08],[0,0,-.30],22);
+ sph('left-elbow',.080,M.skin,[-.80,1.12,.13],[1,.75,1],undefined,16); sph('right-elbow',.080,M.skin,[.80,1.12,.13],[1,.75,1],undefined,16);
+ cyl('left-forearm',.075,.095,.46,M.skin,[-.86,.88,.15],[0,0,-.04],22);
+ cyl('right-forearm',.075,.095,.46,M.skin,[.86,.88,.15],[0,0,.04],22);
+ sph('left-hand',.080,M.skin,[-.86,.61,.20],[.90,.62,1.20],undefined,16); sph('right-hand',.080,M.skin,[.86,.61,.20],[.90,.62,1.20],undefined,16);
+ for(const side of [-1,1]) for(let i=-2;i<=2;i++) cyl('finger',.010,.014,.095,M.skin,[side*(.86+i*.020),.52,.275],[1.12,0,0],8);
+
+ // head: narrower jaw, face details, nose, brows, hair cap with bangs and side locks.
+ cyl('neck',.105,.120,.20,M.skin,[0,1.95,.04],[0,0,0],20);
+ sph('head',.30,M.skin,[0,2.22,.06],[.82,1.08,.74],undefined,40);
+ sph('jaw',.18,M.skin,[0,2.06,.08],[1.05,.48,.72],undefined,28);
+ sph('left-ear',.040,M.skin,[-.265,2.22,.02],[.50,1.08,.70],undefined,14); sph('right-ear',.040,M.skin,[.265,2.22,.02],[.50,1.08,.70],undefined,14);
+ add(new THREE.ConeGeometry(.040,.125,14),M.skin,[0,2.22,.300],[Math.PI/2,0,0]);
+ sph('left-eye-white',.026,mat(0xf8f3e8,.5,.12),[-.088,2.27,.303],[1,.62,.35],undefined,12); sph('right-eye-white',.026,mat(0xf8f3e8,.5,.12),[.088,2.27,.303],[1,.62,.35],undefined,12);
+ sph('left-pupil',.014,M.dark,[-.088,2.27,.319],[1,.65,.30],undefined,8); sph('right-pupil',.014,M.dark,[.088,2.27,.319],[1,.65,.30],undefined,8);
+ plate('left-brow',.115,.018,.016,M.hair,[-.090,2.355,.300],[0,0,-.14]); plate('right-brow',.115,.018,.016,M.hair,[.090,2.355,.300],[0,0,.14]);
+ plate('mouth',.120,.014,.014,M.face,[0,2.095,.303]);
+ sph('hair-cap',.31,M.hair,[0,2.405,-.015],[1.02,.42,.82],undefined,36);
+ sph('back-hair',.22,M.hair,[0,2.25,-.230],[1.12,1.05,.62],undefined,28);
+ for(let i=-4;i<=4;i++) add(new THREE.ConeGeometry(.035+Math.abs(i)*.002,.25,10),M.hair,[i*.060,2.365,.215],[.72,0,-i*.075]);
+ sph('side-lock-l',.048,M.hair,[-.245,2.15,.12],[.66,1.62,.65],undefined,16); sph('side-lock-r',.048,M.hair,[.245,2.15,.12],[.66,1.62,.65],undefined,16);
+
+ // stage equipment: fantasy detail but kept around human silhouette.
  if(stage>=1){
-  add(new THREE.CylinderGeometry(.34,.34,.075,44),isEnemy?mat(0x8f2135,.45,.18):mat(0x2455b3,.45,.18),[-.95,1.15,.27],[Math.PI/2,0,0]);
-  add(new THREE.TorusGeometry(.34,.025,8,44),M.gold,[-.95,1.15,.27],[Math.PI/2,0,0]); box('shield-boss',.13,.13,.07,M.gold,[-.95,1.15,.335]);
-  limb('sword-blade',.99,1.19,.13,1.05,.028,.045,[0,0,-.65],M.metal); box('sword-guard',.22,.07,.07,M.gold,[.75,.84,.15],[0,0,-.65]); add(new THREE.ConeGeometry(.07,.25,16),M.metal,[1.25,1.62,.12],[0,0,-.65]);
+  add(new THREE.CylinderGeometry(.31,.31,.065,48),isEnemy?mat(0x8f2135,.45,.18):mat(0x2455b3,.45,.18),[-.94,1.12,.28],[Math.PI/2,0,0]);
+  add(new THREE.TorusGeometry(.31,.023,8,48),M.gold,[-.94,1.12,.28],[Math.PI/2,0,0]); plate('shield-cross-v',.045,.50,.030,M.gold,[-.94,1.12,.335]); plate('shield-cross-h',.38,.045,.030,M.gold,[-.94,1.12,.338]);
+  cyl('sword-blade',.020,.040,1.00,M.metal,[.98,1.20,.14],[0,0,-.66],18); plate('sword-guard',.24,.055,.055,M.gold,[.73,.84,.15],[0,0,-.66]); add(new THREE.ConeGeometry(.055,.22,18),M.metal,[1.22,1.60,.13],[0,0,-.66]);
  }
  if(stage>=2){
-  add(new THREE.CylinderGeometry(.30,.34,.24,32),M.metal,[0,2.45,.0]); add(new THREE.ConeGeometry(.35,.22,32),M.metal,[0,2.64,0]); box('visor',.34,.05,.045,M.dark,[0,2.42,.32]);
-  box('belt',.72,.10,.26,M.gold,[0,1.12,.31]);
+  add(new THREE.CylinderGeometry(.275,.310,.22,36),M.metal,[0,2.45,0]); add(new THREE.ConeGeometry(.32,.20,36),M.metal,[0,2.62,0]); plate('visor',.33,.045,.040,M.dark,[0,2.42,.300]);
+  for(let i=-2;i<=2;i++) plate('armor-scale',.13,.07,.035,M.gold,[i*.14,1.38,.315],[0,0,i*.025]);
  }
  if(stage>=3){
-  const cape=add(new THREE.PlaneGeometry(1.36,2.10,4,6),M.cape,[0,1.05,-.43],[-.10,0,0]); cape.castShadow=false; cape.receiveShadow=true;
-  box('cape-clasp',.36,.12,.08,M.gold,[0,1.79,.35]); ell('gem',.07,M.accent,[0,1.81,.42]);
+  const cape=add(new THREE.PlaneGeometry(1.10,1.95,4,8),M.cape,[0,.97,-.38],[-.08,0,0]); cape.castShadow=false; cape.receiveShadow=true;
+  plate('cape-strap',.72,.06,.045,M.gold,[0,1.75,.30]); sph('cape-gem',.055,M.accent,[0,1.77,.35],[1,.7,.35],undefined,16);
  }
  if(stage>=4){
-  add(new THREE.TorusGeometry(.29,.033,10,44),M.gold,[0,2.63,0],[Math.PI/2,0,0]);
-  for(let i=0;i<7;i++){const a=i/7*Math.PI*2;add(new THREE.ConeGeometry(.055,.23,10),M.gold,[Math.cos(a)*.26,2.75,Math.sin(a)*.26]);}
-  ell('crown-jewel',.055,M.accent,[0,2.86,0]);
+  add(new THREE.TorusGeometry(.255,.030,10,52),M.gold,[0,2.62,0],[Math.PI/2,0,0]);
+  for(let i=0;i<7;i++){const a=i/7*Math.PI*2;add(new THREE.ConeGeometry(.048,.205,12),M.gold,[Math.cos(a)*.23,2.735,Math.sin(a)*.23]);}
+  sph('crown-jewel',.045,M.accent,[0,2.84,.01],[1,1,1],undefined,14);
  }
  if(stage>=5){
-  ell('royal-robe',.46,mat(isEnemy?0x6e1020:0xf5ecda,.52,.12),[0,1.20,.0],[1.02,1.36,.82]);
-  add(new THREE.TorusGeometry(.54,.026,8,60),M.gold,[0,1.42,.30],[Math.PI/2,0,0]); add(new THREE.TorusGeometry(.42,.020,8,44),M.gold,[0,1.08,.31],[Math.PI/2,0,0]);
-  ell('imperial-orb',.13,M.accent,[0,2.97,0]);
+  // emperor robe as layered hanging cloth panels, not a round blob.
+  plate('robe-center',.50,.98,.060,mat(isEnemy?0x701321:0xf4ead8,.55,.12),[0,1.00,.300]);
+  plate('robe-left',.28,.86,.055,mat(isEnemy?0x5a1020:0xe2d4bd,.58,.08),[-.28,.94,.255],[0,0,.05]);
+  plate('robe-right',.28,.86,.055,mat(isEnemy?0x5a1020:0xe2d4bd,.58,.08),[.28,.94,.255],[0,0,-.05]);
+  add(new THREE.TorusGeometry(.50,.023,8,64),M.gold,[0,1.42,.305],[Math.PI/2,0,0]); add(new THREE.TorusGeometry(.39,.018,8,52),M.gold,[0,1.08,.310],[Math.PI/2,0,0]);
+  sph('imperial-orb',.105,M.accent,[0,2.96,0],[1,1,1],undefined,20);
  }
- const aura=add(new THREE.TorusGeometry(.72+stage*.07,.022,8,56),M.accent,[0,.025,0],[Math.PI/2,0,0]); aura.castShadow=false; aura.receiveShadow=false;
- root.userData.modelQuality='v7-embedded-humanoid-mesh-character';
- root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(stage>=1)addEdgesTo(o,0x04060a);}});
+ const aura=add(new THREE.TorusGeometry(.70+stage*.07,.020,8,64),M.accent,[0,.025,0],[Math.PI/2,0,0]); aura.castShadow=false; aura.receiveShadow=false;
+ root.userData.modelQuality='v8-high-detail-humanoid-rpg-character';
+ root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(stage>=1)addEdgesTo(o,0x020309);}});
  return root;
 }
 
