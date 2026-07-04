@@ -1,11 +1,14 @@
-# Era Dominion 3D Reborn v2
+# Era Dominion Reborn v4 - Style Overhaul
 
-단일 파일 배포용 웹게임입니다.
+GitHub/Vercel 업로드용 단일 구조입니다.
 
-## v2 변경점
-- 리더 캐릭터 절차형 3D 모델 디테일 강화
-- 조명, 톤매핑, 그림자, 도로, 나무, 도시 배경 추가
-- 기본 NPC 수 증가
-- NPC 재생성 수 증가
-- 적 리더에게 닿거나 약한 상태로 충돌했을 때 게임오버 처리 수정
-- GitHub/Vercel 업로드는 index.html과 README.md만 필요
+업로드 파일:
+- index.html
+- README.md
+
+변경점:
+- Three.js 절차형 기둥 캐릭터 느낌을 버리고 고해상도 2.5D 일러스트풍 렌더링으로 전환
+- 플레이어/적 리더 단계별 실루엣, 장비, 머리, 갑옷, 방패, 검, 망토, 왕관, 황제 오라 강화
+- 기본 NPC 155명으로 증가, 최대 190명까지 재생성
+- 게임오버/승리/다시하기/일시정지 유지
+- 단일 index.html만으로 작동
