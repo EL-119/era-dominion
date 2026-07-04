@@ -214,7 +214,63 @@ function buildCharacterModel(level,color){
  M(new THREE.BoxGeometry(1.2*s,.06*s,.08*s),trim,0,3.12,.63,0,0,0);
  if(level>=1){M(new THREE.BoxGeometry(.18*s,.62*s,.10*s),trim,-.55,3.63,.78,0,0,.25);M(new THREE.BoxGeometry(.18*s,.62*s,.10*s),trim,.55,3.63,.78,0,0,-.25)}
  if(level>=2){M(new THREE.BoxGeometry(.08*s,1.6*s,.1*s),trim,-.72,3.55,.82,0,0,.18);M(new THREE.BoxGeometry(.08*s,1.6*s,.1*s),trim,.72,3.55,.82,0,0,-.18)}
- group.scale.setScalar(1.14);return group}
+ // v15 premium leader-only character finish: more human silhouette, layered costume, readable Zelda-like casual fantasy parts
+ const ink=mat(0x111018,{roughness:.7});
+ const cheek=mat(0xff9c86,{roughness:.72});
+ const shine=mat(0xffffff,{roughness:.18,metalness:.15,emissive:0xffffff,emissiveIntensity:.06});
+ // larger expressive eyes + eyebrows, makes the face look less like a plain sphere
+ M(new THREE.SphereGeometry(.068*s,12,8),shine,-.235,5.31,.61);
+ M(new THREE.SphereGeometry(.068*s,12,8),shine,.235,5.31,.61);
+ M(new THREE.BoxGeometry(.23*s,.038*s,.035*s),ink,-.24,5.46,.61,0,0,.15);
+ M(new THREE.BoxGeometry(.23*s,.038*s,.035*s),ink,.24,5.46,.61,0,0,-.15);
+ M(new THREE.SphereGeometry(.055*s,10,8),cheek,-.43,5.17,.57);
+ M(new THREE.SphereGeometry(.055*s,10,8),cheek,.43,5.17,.57);
+ // sculpted hair bangs and side hair so the head reads as a character, not a helmet ball
+ for(let i=-2;i<=2;i++){M(new THREE.ConeGeometry(.13*s,.5*s,10),hairMat,i*.18,5.55,.55,Math.PI*.58,0,i*.12)}
+ M(new THREE.SphereGeometry(.24*s,12,8),hairMat,-.56,5.25,.02);
+ M(new THREE.SphereGeometry(.24*s,12,8),hairMat,.56,5.25,.02);
+ // rounded shoulder/forearm armor and hands, only on leader models, followers remain light
+ if(level>=1){
+   M(new THREE.SphereGeometry(.42*s,18,12),steel,-1.02,4.28,.12).scale.set(1.18,.62,.82);
+   M(new THREE.SphereGeometry(.42*s,18,12),steel,1.02,4.28,.12).scale.set(1.18,.62,.82);
+   M(new THREE.CapsuleGeometry(.18*s,.9*s,6,14),steel,-1.18,3.25,.25,0,0,.42);
+   M(new THREE.CapsuleGeometry(.18*s,.9*s,6,14),steel,1.18,3.25,.25,0,0,-.42);
+   M(new THREE.BoxGeometry(.78*s,.18*s,.15*s),trim,-1.52,3.76,.52,0,0,.22);
+   M(new THREE.BoxGeometry(.78*s,.18*s,.15*s),trim,1.52,3.76,.52,0,0,-.22);
+ }
+ // tunic skirt plates and boot trims give a stronger person-shaped lower body
+ const skirtMat=level>=5?white:(level>=4?gold:(level>=3?red:(level>=2?purple:torsoMat)));
+ for(let i=-1;i<=1;i++){M(new THREE.BoxGeometry(.42*s,.72*s,.12*s),skirtMat,i*.44,2.38,.55,0,0,-i*.12)}
+ M(new THREE.BoxGeometry(.72*s,.13*s,.86*s),trim,-.38,1.02,.22,0,0,.03);
+ M(new THREE.BoxGeometry(.72*s,.13*s,.86*s),trim,.38,1.02,.22,0,0,-.03);
+ // readable rank-specific silhouettes
+ if(level===0){
+   M(new THREE.BoxGeometry(.58*s,.18*s,.12*s),mat(0xf6e7bc,{roughness:.62}),0,4.08,.68);
+   M(new THREE.CylinderGeometry(.045*s,.055*s,1.25*s,8),leather,.72,3.42,.2,0,0,-.55);
+ }
+ if(level===1){
+   M(new THREE.BoxGeometry(.52*s,.46*s,.16*s),mat(0x8fd6ff,{roughness:.28,emissive:0x103d5f,emissiveIntensity:.12}),-.02,3.95,.89);
+   M(new THREE.CylinderGeometry(.7*s,.55*s,.22*s,32),mat(0x1b5bd6,{roughness:.34,metalness:.18}),-1.68,3.38,.56,Math.PI/2,.05,.12);
+ }
+ if(level===2){
+   M(new THREE.TorusGeometry(1.08*s,.035*s,8,48),trim,0,5.95,.03,Math.PI/2);
+   M(new THREE.BoxGeometry(2.45*s,.14*s,3.95*s),mat(0x50138e,{roughness:.42,emissive:0x16002d,emissiveIntensity:.1}),0,2.72,-1.28,.38);
+ }
+ if(level===3){
+   M(new THREE.CylinderGeometry(.08*s,.09*s,3.6*s,12),gold,-1.9,3.45,.55,0,0,.08);
+   M(new THREE.BoxGeometry(1.08*s,.7*s,.1*s),mat(0xc01624,{roughness:.35,emissive:0x380006,emissiveIntensity:.12}),-2.16,4.82,.6,0,0,.08);
+   M(new THREE.BoxGeometry(3.25*s,.2*s,5.15*s),mat(0x8b0e19,{roughness:.45}),0,2.72,-1.55,.42);
+ }
+ if(level===4){
+   for(let i=0;i<6;i++){const a=i*Math.PI*2/6;M(new THREE.SphereGeometry(.09*s,10,8),mat(0x7df5ff,{roughness:.08,emissive:0x23d8ff,emissiveIntensity:1.25}),Math.cos(a)*1.45,5.08+Math.sin(a*2)*.1,Math.sin(a)*1.45)}
+   M(new THREE.BoxGeometry(3.8*s,.22*s,5.8*s),mat(0x122e72,{roughness:.37,emissive:0x051237,emissiveIntensity:.1}),0,2.62,-1.62,.43);
+ }
+ if(level>=5){
+   M(new THREE.TorusGeometry(1.55*s,.045*s,8,72),mat(0x8cffff,{roughness:.08,emissive:0x26dcff,emissiveIntensity:1.1}),0,5.16,.05,Math.PI/2);
+   M(new THREE.BoxGeometry(5.1*s,.25*s,6.85*s),mat(0xfff4de,{roughness:.28,metalness:.22,emissive:0x332300,emissiveIntensity:.13}),0,2.45,-1.85,.45);
+   for(let i=0;i<8;i++){const a=i*Math.PI*2/8;M(new THREE.ConeGeometry(.07*s,.55*s,8),gold,Math.cos(a)*1.8,6.45,Math.sin(a)*1.8,0,0,a)}
+ }
+ group.scale.setScalar(1.18);return group}
 function animateCharacterUnit(u,t){if(!u||!u.group)return;const parts=u.group.children[0]?.userData?.walkParts;if(!parts)return;const moving=(u.lastPos?u.group.position.distanceTo(u.lastPos):0)>0.01;u.lastPos=u.group.position.clone();const w=moving?Math.sin(t*9+u.group.id)*.42:Math.sin(t*2+u.group.id)*.05;parts[0].rotation.x=w;parts[1].rotation.x=-w;parts[2].rotation.x=-w*.7;parts[3].rotation.x=w*.7}
 function animateAllCharacters(){const t=performance.now()/1000;[player,...enemies].forEach(u=>!u?.dead&&animateCharacterUnit(u,t))}
 function refreshUnitVisual(u){const pos=u.group.position.clone(),rot=u.group.rotation.y,parent=u.group.parent;if(parent)parent.remove(u.group);const newGroup=new THREE.Group();const l=levels[u.level];const isLeader=(u===player||u.team==='enemy');const model=isLeader?buildCharacterModel(u.level,u.color):buildCrowdModel(u.color,u.team);newGroup.add(model);let ring=null;if(isLeader){ring=new THREE.Mesh(new THREE.TorusGeometry(l.range,.075,8,72),new THREE.MeshBasicMaterial({color:u.color,transparent:true,opacity:u===player?.34:.26}));ring.rotation.x=Math.PI/2;ring.position.y=.15;newGroup.add(ring)}let label=null;if(isLeader){const txt=(u.team==='enemy'&&u.level===0)?`적 세력\n★  ${Math.floor(u.power).toLocaleString()}`:`${l.name} | ${l.tag}\n${l.stars}  ${Math.floor(u.power).toLocaleString()}`;label=makeLabel(txt);label.position.y=(isLeader?11.5*l.scale:5);newGroup.add(label)}newGroup.position.copy(pos);newGroup.rotation.y=rot;u.group=newGroup;u.ring=ring;u.label=label;u.range=l.range;u.radius=isLeader?1.8*l.scale:1.15;if(parent)parent.add(newGroup)}
