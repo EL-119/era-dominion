@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>에라 도미니언: 문명의 황제</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="site-header">
+      <div class="brand">
+        <div class="crown">♛</div>
+        <div>
+          <p class="eyebrow">ERA DOMINION</p>
+          <h1>에라 도미니언</h1>
+        </div>
+      </div>
+      <nav>
+        <button class="nav-btn" data-view="home">홈</button>
+        <button class="nav-btn" data-view="game">게임</button>
+        <button class="nav-btn" data-view="stages">스테이지</button>
+        <button class="nav-btn" data-view="evolution">진화</button>
+      </nav>
+    </header>
+
+    <main>
+      <section id="home" class="view active hero-view">
+        <div class="hero-copy">
+          <p class="eyebrow">문명을 흡수하고 시대를 지배하라</p>
+          <h2>시민 리더에서<br />도시의 황제까지</h2>
+          <p class="desc">회색 시민을 흡수해 세력을 키우고, 100명을 모으면 강력한 상위 캐릭터로 압축 진화합니다.</p>
+          <div class="hero-actions">
+            <button id="startGame" class="primary-btn">게임 시작하기</button>
+            <button class="secondary-btn" data-view="evolution">진화 단계 보기</button>
+          </div>
+        </div>
+        <div class="hero-card">
+          <canvas id="previewCanvas" width="520" height="360"></canvas>
+          <div class="preview-caption">고대 마을 프로토타입</div>
+        </div>
+      </section>
+
+      <section id="game" class="view game-view">
+        <div class="game-shell">
+          <div class="game-topbar">
+            <div class="stat-card"><span>세력 수</span><strong id="crowdCount">1 / 100</strong></div>
+            <div class="stat-card"><span>점수</span><strong id="score">0</strong></div>
+            <div class="stat-card"><span>단계</span><strong id="levelName">시민 리더</strong></div>
+            <div class="stat-card"><span>시간</span><strong id="timer">03:00</strong></div>
+          </div>
+          <div class="canvas-wrap">
+            <canvas id="gameCanvas" width="1200" height="720"></canvas>
+            <div id="evolutionBanner" class="evolution-banner hidden">
+              <p>EVOLUTION</p>
+              <strong id="bannerLevel">도시 대장</strong>
+              <span id="bannerBoost">흡수 점수 x10</span>
+            </div>
+            <div class="mobile-pad">
+              <div class="pad-knob"></div>
+            </div>
+          </div>
+          <div class="game-help">
+            <p>조작: PC는 WASD 또는 방향키, 모바일은 화면을 드래그하세요.</p>
+            <button id="restart" class="secondary-btn">다시 시작</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="stages" class="view page-view">
+        <div class="section-title">
+          <p class="eyebrow">시대 스테이지</p>
+          <h2>과거에서 미래로 확장되는 도시</h2>
+        </div>
+        <div class="stage-grid">
+          <article class="stage-card unlocked"><div class="stage-art ancient"></div><h3>1. 고대 마을</h3><p>흙길과 우물, 시장이 있는 첫 번째 도시입니다.</p></article>
+          <article class="stage-card locked"><div class="stage-art medieval"></div><h3>2. 중세 왕국</h3><p>성벽과 깃발, 병사들이 등장하는 왕국입니다.</p></article>
+          <article class="stage-card locked"><div class="stage-art industry"></div><h3>3. 산업 도시</h3><p>공장과 철도, 증기가 가득한 확장 구간입니다.</p></article>
+          <article class="stage-card locked"><div class="stage-art modern"></div><h3>4. 현대 메트로폴리스</h3><p>고층 건물과 도로가 있는 빠른 도시입니다.</p></article>
+          <article class="stage-card locked"><div class="stage-art future"></div><h3>5. 미래 도시</h3><p>네온과 드론, 에너지 코어가 있는 최종 도시입니다.</p></article>
+        </div>
+      </section>
+
+      <section id="evolution" class="view page-view">
+        <div class="section-title">
+          <p class="eyebrow">세력 압축 진화</p>
+          <h2>100명을 모으면 다음 존재로 진화</h2>
+        </div>
+        <div id="evolutionGrid" class="evolution-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
