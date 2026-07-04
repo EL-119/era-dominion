@@ -1,7 +1,7 @@
-# Era Dominion 3D - Reborn v11
+# Era Dominion 3D - Reborn v12
 
-- v10에서 버튼이 반응하지 않는 문제 수정
-- GLTFLoader 정적 import 제거
-- GLB는 게임 시작 후 동적 로딩, 실패해도 fallback으로 시작
-- 시작/조작방법/일시정지/다시하기 버튼 이벤트 중복 바인딩
+- 실제 무료 상업 이용 가능 GLB 에셋 적용
+- 리더 기본 모델: RobotExpressive by Tomás Laulhé, CC0
 - GitHub 업로드 파일: index.html, README.md
+- assets 폴더 없이 외부 CC0 GLB를 로딩하고, 실패 시 안전 fallback으로 시작
+- 단계별 갑옷, 검, 방패, 망토, 왕관, 황제 장식 추가
