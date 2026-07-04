@@ -50,7 +50,7 @@
     <div class="hud bottom-tip" id="tipText">100명을 흡수하면 다음 단계로 진화합니다.</div>
     <div class="minimap hud"><canvas id="mini"></canvas></div>
     <div class="joy" id="joy"></div>
-    <div class="game-menu"><button class="smallbtn" id="restartBtn">다시 시작</button><button class="smallbtn" id="homeBtn">홈으로</button></div>
+    <div class="game-menu"><button class="smallbtn" id="pauseBtn">일시정지</button><button class="smallbtn" id="restartBtn">다시 시작</button><button class="smallbtn" id="homeBtn">홈으로</button></div>
     <div class="toast" id="toast">EVOLUTION</div>
     <div class="overlay" id="gameOver"><div class="modal"><h2 id="overTitle">GAME OVER</h2><p id="overDesc"></p><button class="btn" id="againBtn">다시하기</button><button class="btn secondary" id="goHomeBtn">홈으로</button></div></div>
   </section>
@@ -74,13 +74,13 @@ $('#evoGrid').innerHTML=levels.map((l,i)=>`<div class="evo-card lv${i+1}"><div c
 const stageNames=['고대 마을','중세 왕국','산업 도시','현대 메트로폴리스','미래 도시'];
 $('#stages').innerHTML=stageNames.map((n,i)=>`<div class="stage-card"><div class="stage-img"></div><h3>${i+1}. ${n}</h3><p>${i===0?'작은 마을에서 첫 세력을 키우세요.':'다음 업데이트에서 확장 예정입니다.'}</p></div>`).join('');
 document.querySelectorAll('[data-scroll]').forEach(b=>b.onclick=()=>document.getElementById(b.dataset.scroll).scrollIntoView({behavior:'smooth',block:'center'}));
-$('#startBtn').onclick=()=>startGame();$('#homeBtn').onclick=()=>showHome();$('#goHomeBtn').onclick=()=>showHome();$('#againBtn').onclick=()=>startGame();$('#restartBtn').onclick=()=>startGame();
+$('#startBtn').onclick=()=>startGame();$('#homeBtn').onclick=()=>showHome();$('#goHomeBtn').onclick=()=>showHome();$('#againBtn').onclick=()=>startGame();$('#restartBtn').onclick=()=>startGame();const pauseBtn=$('#pauseBtn');if(pauseBtn)pauseBtn.onclick=()=>togglePause();
 let scene,camera,renderer,clock,player,followers=[],npcs=[],enemies=[],obstacles=[],particles=[],labels=[],keys={},state,animationId,paused=false;
 const worldSize=260;
 function showGame(){home.classList.remove('active');game.classList.add('active');document.body.scrollTop=0;document.documentElement.scrollTop=0;requestAnimationFrame(()=>{resize();canvas?.focus?.()})}
 function showHome(){game.classList.remove('active');home.classList.add('active');cancelAnimationFrame(animationId)}
-function startGame(){showGame();paused=false;keys={};joyVec={x:0,y:0};$('#gameOver').classList.remove('show');const po=document.getElementById('pauseOverlay');if(po)po.style.display='none';init3D();}
-function init3D(){paused=false;cancelAnimationFrame(animationId);if(renderer){renderer.dispose();renderer=null;}scene=new THREE.Scene();scene.background=new THREE.Color(0x07111f);scene.fog=new THREE.Fog(0x07111f,110,245);camera=new THREE.PerspectiveCamera(42,1,.1,700);renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.24;clock=new THREE.Clock();followers=[];npcs=[];enemies=[];obstacles=[];particles=[];labels=[];state={score:0,kills:0,time:180,over:false};
+function startGame(){showGame();paused=false;keys={};joyVec={x:0,y:0};$('#gameOver').classList.remove('show');const po=document.getElementById('pauseOverlay');if(po)po.style.display='none';const pb=document.getElementById('pauseBtn');if(pb)pb.textContent='일시정지';init3D();}
+function init3D(){paused=false;cancelAnimationFrame(animationId);if(renderer){renderer.dispose();renderer=null;}scene=new THREE.Scene();scene.background=new THREE.Color(0x07111f);scene.fog=new THREE.Fog(0x07111f,110,245);camera=new THREE.PerspectiveCamera(42,1,.1,700);renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.35));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;clock=new THREE.Clock();followers=[];npcs=[];enemies=[];obstacles=[];particles=[];labels=[];state={score:0,kills:0,time:180,over:false};
  const hemi=new THREE.HemisphereLight(0xbfd8ff,0x47321d,2.2);scene.add(hemi);const sun=new THREE.DirectionalLight(0xffe0a6,3.8);sun.position.set(-45,80,35);sun.castShadow=true;sun.shadow.mapSize.set(4096,4096);sun.shadow.camera.left=-150;sun.shadow.camera.right=150;sun.shadow.camera.top=150;sun.shadow.camera.bottom=-150;scene.add(sun);const rim=new THREE.DirectionalLight(0x85b9ff,1.15);rim.position.set(55,45,-65);scene.add(rim);
  createGround();createTown();player=createUnit(0,0,0,0,true);player.power=1;player.collected=1;player.score=0;player.level=0;player.speed=26;player.team='player';player.targetPath=[];scene.add(player.group);
  for(let i=0;i<210;i++) spawnNpc();
@@ -111,6 +111,23 @@ function mat(color,opts={}){return new THREE.MeshStandardMaterial({color,roughne
 function addLimb(group,x,y,z,rotZ,color,s){const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.38*s,2.7*s,4,8),mat(color,{roughness:.48}));arm.position.set(x,y,z);arm.rotation.z=rotZ;arm.castShadow=true;group.add(arm);return arm}
 function addCrown(group,y,s,big=false){const gold=mat(0xffd25b,{metalness:.75,roughness:.18,emissive:0x332000,emissiveIntensity:.45});const band=new THREE.Mesh(new THREE.TorusGeometry((big?1.55:1.25)*s,.12*s,8,28),gold);band.rotation.x=Math.PI/2;band.position.y=y;band.castShadow=true;group.add(band);for(let i=0;i<(big?7:5);i++){const a=i*Math.PI*2/(big?7:5);const spike=new THREE.Mesh(new THREE.ConeGeometry(.25*s,.9*s,8),gold);spike.position.set(Math.cos(a)*(big?1.45:1.15)*s,y+.5*s,Math.sin(a)*(big?1.45:1.15)*s);spike.castShadow=true;group.add(spike)} }
 function addCape(group,color,s,long=false){const cape=new THREE.Mesh(new THREE.BoxGeometry((long?3.6:2.5)*s,.18*s,(long?5.4:3.2)*s),mat(color,{roughness:.55}));cape.position.set(0,(long?3.4:3.2)*s,-1.55*s);cape.rotation.x=.28;cape.castShadow=true;group.add(cape)}
+
+function buildCrowdModel(color,team='neutral'){
+ const g=new THREE.Group();g.userData.isSimple=true;
+ const c=new THREE.Color(color);
+ const bodyMat=new THREE.MeshStandardMaterial({color:c,roughness:.72,metalness:.02});
+ const skinMat=new THREE.MeshStandardMaterial({color:0xe8bf94,roughness:.74});
+ const darkMat=new THREE.MeshStandardMaterial({color:team==='neutral'?0x6f6a62:color,roughness:.82});
+ const shadow=new THREE.Mesh(new THREE.CircleGeometry(1.35,18),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.18}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.02;g.add(shadow);
+ const legL=new THREE.Mesh(new THREE.CapsuleGeometry(.13,1.15,3,6),darkMat);legL.position.set(-.22,1.0,0);legL.castShadow=true;g.add(legL);
+ const legR=new THREE.Mesh(new THREE.CapsuleGeometry(.13,1.15,3,6),darkMat);legR.position.set(.22,1.0,0);legR.castShadow=true;g.add(legR);
+ const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.34,1.25,4,8),bodyMat);torso.position.set(0,2.25,0);torso.scale.set(1,.95,.72);torso.castShadow=true;g.add(torso);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.38,12,10),skinMat);head.position.set(0,3.35,.02);head.castShadow=true;g.add(head);
+ const hair=new THREE.Mesh(new THREE.SphereGeometry(.39,10,6),new THREE.MeshStandardMaterial({color:0x2a2119,roughness:.85}));hair.position.set(0,3.54,-.04);hair.scale.set(1,.45,.8);hair.castShadow=true;g.add(hair);
+ const armL=new THREE.Mesh(new THREE.CapsuleGeometry(.10,.95,3,6),bodyMat);armL.position.set(-.48,2.15,0);armL.rotation.z=.18;armL.castShadow=true;g.add(armL);
+ const armR=new THREE.Mesh(new THREE.CapsuleGeometry(.10,.95,3,6),bodyMat);armR.position.set(.48,2.15,0);armR.rotation.z=-.18;armR.castShadow=true;g.add(armR);
+ g.scale.setScalar(.95);return g
+}
 function buildCharacterModel(level,color){
  const l=levels[level],s=l.scale,group=new THREE.Group();group.userData.walkParts=[];group.userData.isCharacter=true;
  const skin=mat(level>=5?0xffd7b0:0xf1bf92,{roughness:.58});
@@ -197,94 +214,11 @@ function buildCharacterModel(level,color){
  M(new THREE.BoxGeometry(1.2*s,.06*s,.08*s),trim,0,3.12,.63,0,0,0);
  if(level>=1){M(new THREE.BoxGeometry(.18*s,.62*s,.10*s),trim,-.55,3.63,.78,0,0,.25);M(new THREE.BoxGeometry(.18*s,.62*s,.10*s),trim,.55,3.63,.78,0,0,-.25)}
  if(level>=2){M(new THREE.BoxGeometry(.08*s,1.6*s,.1*s),trim,-.72,3.55,.82,0,0,.18);M(new THREE.BoxGeometry(.08*s,1.6*s,.1*s),trim,.72,3.55,.82,0,0,-.18)}
-
- // high quality character pass: readable casual fantasy silhouette, layered clothing and gear
- const decoGold=mat(0xffd978,{metalness:.72,roughness:.18,emissive:0x2b1800,emissiveIntensity:.18});
- const gemBlue=mat(0x78e8ff,{roughness:.1,metalness:.12,emissive:0x1bc4ff,emissiveIntensity:1.0});
- const gemRed=mat(0xff4d4d,{roughness:.12,metalness:.1,emissive:0xff1d1d,emissiveIntensity:.65});
- const gemPurple=mat(0xc783ff,{roughness:.1,metalness:.1,emissive:0x7b2cff,emissiveIntensity:.8});
- const clothDark=mat(0x101827,{roughness:.62});
- // face details and hair volume, visible even from the top camera
- M(new THREE.SphereGeometry(.055*s,10,8),mat(0xffffff,{roughness:.25}),-.235,5.30,.612);
- M(new THREE.SphereGeometry(.055*s,10,8),mat(0xffffff,{roughness:.25}),.235,5.30,.612);
- M(new THREE.SphereGeometry(.028*s,8,6),black,-.225,5.30,.652);
- M(new THREE.SphereGeometry(.028*s,8,6),black,.225,5.30,.652);
- M(new THREE.BoxGeometry(.22*s,.035*s,.035*s),hairMat,-.25,5.48,.62,0,0,-.18);
- M(new THREE.BoxGeometry(.22*s,.035*s,.035*s),hairMat,.25,5.48,.62,0,0,.18);
- M(new THREE.SphereGeometry(.055*s,8,6),mat(0xd59672,{roughness:.65}),0,5.20,.69);
- M(new THREE.BoxGeometry(.35*s,.04*s,.035*s),mat(0x7d392e,{roughness:.75}),0,5.03,.665);
- // hands, gloves and bracers
- M(new THREE.BoxGeometry(.28*s,.16*s,.22*s),level>=1?darkSteel:leather,-1.25,2.98,.12,0,0,.24);
- M(new THREE.BoxGeometry(.28*s,.16*s,.22*s),level>=1?darkSteel:leather,1.25,2.98,.12,0,0,-.24);
- M(new THREE.SphereGeometry(.18*s,12,8),skin,-1.38,2.62,.2);
- M(new THREE.SphereGeometry(.18*s,12,8),skin,1.38,2.62,.2);
- // tunic skirt panels replace blocky lower body impression
- const panelMat=level===0?mat(0x6f8a5b,{roughness:.65}):level===1?blue:level===2?purple:level===3?red:level>=4?gold:white;
- M(new THREE.BoxGeometry(.62*s,.78*s,.10*s),panelMat,-.32,2.32,.58,.06,0,.05);
- M(new THREE.BoxGeometry(.62*s,.78*s,.10*s),panelMat,.32,2.32,.58,.06,0,-.05);
- M(new THREE.BoxGeometry(.22*s,.78*s,.09*s),trim,-.78,2.32,.5,.06,0,.15);
- M(new THREE.BoxGeometry(.22*s,.78*s,.09*s),trim,.78,2.32,.5,.06,0,-.15);
- M(new THREE.BoxGeometry(.56*s,.16*s,.62*s),level>=2?darkSteel:leather,-.38,1.98,.08);
- M(new THREE.BoxGeometry(.56*s,.16*s,.62*s),level>=2?darkSteel:leather,.38,1.98,.08);
- M(new THREE.BoxGeometry(.55*s,.32*s,.88*s),bootMat,-.38,.72,.25,0,.06,0);
- M(new THREE.BoxGeometry(.55*s,.32*s,.88*s),bootMat,.38,.72,.25,0,-.06,0);
- if(level===0){
-   M(new THREE.BoxGeometry(.42*s,.08*s,.12*s),mat(0xe7c795,{roughness:.6}),-.32,3.95,.68,0,0,.35);
-   M(new THREE.BoxGeometry(.42*s,.08*s,.12*s),mat(0xe7c795,{roughness:.6}),.32,3.95,.68,0,0,-.35);
-   M(new THREE.CylinderGeometry(.05*s,.06*s,1.75*s,8),mat(0xb7b1a2,{roughness:.55}),1.22,2.85,.18,0,0,-.55);
- }
- if(level>=1){
-   // blue captain: helmet rim, shield crest, sword guard
-   M(new THREE.TorusGeometry(.62*s,.045*s,8,28),decoGold,0,5.82,.01,Math.PI/2);
-   M(new THREE.BoxGeometry(.92*s,.12*s,.13*s),decoGold,0,3.96,.91);
-   M(new THREE.ConeGeometry(.16*s,.42*s,3),decoGold,-1.52,3.35,.46,0,0,Math.PI/3);
-   M(new THREE.ConeGeometry(.16*s,.42*s,3),decoGold,-1.52,3.35,.28,0,0,-Math.PI/3);
-   M(new THREE.BoxGeometry(.54*s,.12*s,.18*s),decoGold,1.34,2.92,.30,0,0,-.45);
- }
- if(level>=2){
-   // purple dominator: angular armor, split cape and glowing gem
-   M(new THREE.ConeGeometry(.24*s,.75*s,4),darkSteel,-.93,4.78,.16,0,0,.65);
-   M(new THREE.ConeGeometry(.24*s,.75*s,4),darkSteel,.93,4.78,.16,0,0,-.65);
-   M(new THREE.SphereGeometry(.16*s,14,10),gemPurple,0,4.18,.93);
-   M(new THREE.BoxGeometry(.95*s,.08*s,2.8*s),mat(0x25104f,{roughness:.56}),-.72,3.08,-1.12,.32,0,.18);
-   M(new THREE.BoxGeometry(.95*s,.08*s,2.8*s),mat(0x25104f,{roughness:.56}),.72,3.08,-1.12,.32,0,-.18);
- }
- if(level>=3){
-   // red lord: fur collar and heavier mantle
-   M(new THREE.SphereGeometry(.32*s,12,8),mat(0xe6d0ae,{roughness:.72}),-.78,4.78,.42);
-   M(new THREE.SphereGeometry(.32*s,12,8),mat(0xe6d0ae,{roughness:.72}),.78,4.78,.42);
-   M(new THREE.BoxGeometry(1.65*s,.18*s,.28*s),decoGold,0,4.58,.66);
-   M(new THREE.SphereGeometry(.18*s,14,10),gemRed,0,4.58,.86);
-   M(new THREE.BoxGeometry(.18*s,1.4*s,.12*s),decoGold,-.58,3.52,1.03,0,0,.12);
-   M(new THREE.BoxGeometry(.18*s,1.4*s,.12*s),decoGold,.58,3.52,1.03,0,0,-.12);
- }
- if(level>=4){
-   // king: broad golden armor, royal collar, crown jewels
-   M(new THREE.ConeGeometry(.42*s,.65*s,4),decoGold,-1.08,4.85,.2,0,0,.7);
-   M(new THREE.ConeGeometry(.42*s,.65*s,4),decoGold,1.08,4.85,.2,0,0,-.7);
-   M(new THREE.TorusGeometry(.88*s,.055*s,8,36),decoGold,0,6.55,.02,Math.PI/2);
-   for(let i=0;i<5;i++){const a=(i-2)*.28;M(new THREE.SphereGeometry(.065*s,10,8),gemBlue,Math.sin(a)*.55,6.86,Math.cos(a)*.15+.08)}
-   M(new THREE.BoxGeometry(1.58*s,.16*s,.18*s),white,0,4.04,1.38);
-   M(new THREE.BoxGeometry(.18*s,1.7*s,.14*s),decoGold,-.72,3.68,1.42,0,0,.08);
-   M(new THREE.BoxGeometry(.18*s,1.7*s,.14*s),decoGold,.72,3.68,1.42,0,0,-.08);
- }
- if(level>=5){
-   // emperor: ceremonial mantle, back halo and larger silhouette
-   M(new THREE.TorusGeometry(1.58*s,.065*s,8,48),decoGold,0,5.32,-.48,Math.PI/2);
-   M(new THREE.BoxGeometry(2.45*s,.18*s,.22*s),decoGold,0,4.72,.74);
-   M(new THREE.SphereGeometry(.18*s,16,10),gemBlue,-.68,4.72,.92);
-   M(new THREE.SphereGeometry(.18*s,16,10),gemRed,0,4.72,.94);
-   M(new THREE.SphereGeometry(.18*s,16,10),gemBlue,.68,4.72,.92);
-   M(new THREE.BoxGeometry(.92*s,2.15*s,.11*s),white,-.78,3.35,1.52,.04,0,.08);
-   M(new THREE.BoxGeometry(.92*s,2.15*s,.11*s),white,.78,3.35,1.52,.04,0,-.08);
-   M(new THREE.BoxGeometry(.20*s,2.25*s,.13*s),decoGold,-1.25,3.35,1.58,.04,0,.08);
-   M(new THREE.BoxGeometry(.20*s,2.25*s,.13*s),decoGold,1.25,3.35,1.58,.04,0,-.08);
- }
- group.scale.setScalar(1.18);return group}
+ group.scale.setScalar(1.14);return group}
 function animateCharacterUnit(u,t){if(!u||!u.group)return;const parts=u.group.children[0]?.userData?.walkParts;if(!parts)return;const moving=(u.lastPos?u.group.position.distanceTo(u.lastPos):0)>0.01;u.lastPos=u.group.position.clone();const w=moving?Math.sin(t*9+u.group.id)*.42:Math.sin(t*2+u.group.id)*.05;parts[0].rotation.x=w;parts[1].rotation.x=-w;parts[2].rotation.x=-w*.7;parts[3].rotation.x=w*.7}
-function animateAllCharacters(){const t=performance.now()/1000;[player,...followers,...npcs,...enemies].forEach(u=>!u?.dead&&animateCharacterUnit(u,t))}
-function refreshUnitVisual(u){const pos=u.group.position.clone(),rot=u.group.rotation.y,parent=u.group.parent;if(parent)parent.remove(u.group);const newGroup=new THREE.Group();const model=buildCharacterModel(u.level,u.color);newGroup.add(model);const l=levels[u.level];const ring=new THREE.Mesh(new THREE.TorusGeometry(l.range,.08,8,96),new THREE.MeshBasicMaterial({color:u.color,transparent:true,opacity:u.team==='player'?.38:.20}));ring.rotation.x=Math.PI/2;ring.position.y=.15;newGroup.add(ring);let label=null;if(u.level>=1||u.team==='player'&&u.level>=1){label=makeLabel(`${l.name} | ${l.tag}\n${l.stars}  ${Math.floor(u.power).toLocaleString()}`);label.position.y=11.5*l.scale;newGroup.add(label)}newGroup.position.copy(pos);newGroup.rotation.y=rot;u.group=newGroup;u.ring=ring;u.label=label;u.range=l.range;u.radius=1.8*l.scale;if(parent)parent.add(newGroup)}
-function createUnit(x,z,level=0,color=null,isPlayer=false){const l=levels[level];const c=color??l.color;const group=new THREE.Group();const model=buildCharacterModel(level,c);group.add(model);const ring=new THREE.Mesh(new THREE.TorusGeometry(l.range,.08,8,96),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:isPlayer?.38:.18}));ring.rotation.x=Math.PI/2;ring.position.y=.15;group.add(ring);const label=(level>=1)?makeLabel(`${l.name} | ${l.tag}\n${l.stars}  1`):null;if(label){label.position.y=11.5*l.scale;group.add(label)}group.position.set(x,0,z);return {group,level,color:c,power:1,collected:1,score:0,range:l.range,radius:1.8*l.scale,speed:18,dir:new THREE.Vector3(Math.random()-.5,0,Math.random()-.5).normalize(),label,ring,team:'neutral',ai:0,dead:false}}
+function animateAllCharacters(){const t=performance.now()/1000;[player,...enemies].forEach(u=>!u?.dead&&animateCharacterUnit(u,t))}
+function refreshUnitVisual(u){const pos=u.group.position.clone(),rot=u.group.rotation.y,parent=u.group.parent;if(parent)parent.remove(u.group);const newGroup=new THREE.Group();const l=levels[u.level];const isLeader=(u===player||u.team==='enemy');const model=isLeader?buildCharacterModel(u.level,u.color):buildCrowdModel(u.color,u.team);newGroup.add(model);let ring=null;if(isLeader){ring=new THREE.Mesh(new THREE.TorusGeometry(l.range,.075,8,72),new THREE.MeshBasicMaterial({color:u.color,transparent:true,opacity:u===player?.34:.26}));ring.rotation.x=Math.PI/2;ring.position.y=.15;newGroup.add(ring)}let label=null;if(isLeader){const txt=(u.team==='enemy'&&u.level===0)?`적 세력\n★  ${Math.floor(u.power).toLocaleString()}`:`${l.name} | ${l.tag}\n${l.stars}  ${Math.floor(u.power).toLocaleString()}`;label=makeLabel(txt);label.position.y=(isLeader?11.5*l.scale:5);newGroup.add(label)}newGroup.position.copy(pos);newGroup.rotation.y=rot;u.group=newGroup;u.ring=ring;u.label=label;u.range=l.range;u.radius=isLeader?1.8*l.scale:1.15;if(parent)parent.add(newGroup)}
+function createUnit(x,z,level=0,color=null,isPlayer=false){const l=levels[level];const c=color??l.color;const group=new THREE.Group();const isLeader=!!isPlayer||level>=1;const model=isLeader?buildCharacterModel(level,c):buildCrowdModel(c,'neutral');group.add(model);let ring=null;if(isLeader){ring=new THREE.Mesh(new THREE.TorusGeometry(l.range,.075,8,72),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:isPlayer?.34:.20}));ring.rotation.x=Math.PI/2;ring.position.y=.15;group.add(ring)}const label=(isLeader&&level>=1)?makeLabel(`${l.name} | ${l.tag}\n${l.stars}  1`):null;if(label){label.position.y=11.5*l.scale;group.add(label)}group.position.set(x,0,z);return {group,level,color:c,power:1,collected:1,score:0,range:l.range,radius:isLeader?1.8*l.scale:1.15,speed:18,dir:new THREE.Vector3(Math.random()-.5,0,Math.random()-.5).normalize(),label,ring,team:'neutral',ai:0,dead:false}}
 function makeLabel(text){const cn=document.createElement('canvas');cn.width=512;cn.height=160;const ctx=cn.getContext('2d');const tex=new THREE.CanvasTexture(cn);const spr=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));spr.scale.set(13,4,1);spr.userData={cn,ctx,tex,text:''};updateLabel(spr,text,0x2f8cff);return spr}
 function updateLabel(spr,text,color=0x2f8cff){if(spr.userData.text===text&&spr.userData.color===color)return;spr.userData.text=text;spr.userData.color=color;const {cn,ctx,tex}=spr.userData;ctx.clearRect(0,0,cn.width,cn.height);ctx.fillStyle='rgba(3,8,15,.78)';round(ctx,18,18,476,124,22);ctx.fill();ctx.lineWidth=4;ctx.strokeStyle='#'+color.toString(16).padStart(6,'0');ctx.stroke();ctx.font='800 34px system-ui';ctx.fillStyle='white';ctx.textAlign='center';const lines=text.split('\n');ctx.fillText(lines[0],256,62);ctx.font='900 34px system-ui';ctx.fillStyle='#ffd25b';ctx.fillText(lines[1]||'',256,108);tex.needsUpdate=true}
 function round(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
@@ -330,12 +264,12 @@ function absorbChecks(){const absorbed=new Set();
    }
  }
  for(const e of [...enemies]){if(e.dead)continue;for(const other of [...enemies]){if(e===other||e.dead||other.dead)continue;const d=e.group.position.distanceTo(other.group.position);const range=Math.max(5,e.range*.55+other.range*.35);if(d<range){if(e.power>other.power*1.08){absorbFaction(e,other)}else if(other.power>e.power*1.08){absorbFaction(other,e)}}}}
- enemies=enemies.filter(e=>!e.dead);while(npcs.length<190)spawnNpc();}
-function absorbNpc(owner,n){owner.power+=levels[owner.level].mult;owner.collected++;owner.score=(owner.score||0)+levels[owner.level].mult;if(owner===player)state.score+=levels[owner.level].mult;spawnBurst(n.group.position,owner.color,8);if(owner===player){const f=createUnit(n.group.position.x,n.group.position.z,0,player.color,false);f.team='player';f.power=1;f.speed=24;scene.add(f.group);followers.push(f);if(followers.length>65){scene.remove(followers.shift().group)}}checkEvolution(owner)}
+ enemies=enemies.filter(e=>!e.dead);while(npcs.length<150)spawnNpc();}
+function absorbNpc(owner,n){owner.power+=levels[owner.level].mult;owner.collected++;owner.score=(owner.score||0)+levels[owner.level].mult;if(owner===player)state.score+=levels[owner.level].mult;spawnBurst(n.group.position,owner.color,8);if(owner===player){const f=createUnit(n.group.position.x,n.group.position.z,0,player.color,false);f.team='player';f.power=1;f.speed=24;scene.add(f.group);followers.push(f);if(followers.length>44){scene.remove(followers.shift().group)}}checkEvolution(owner)}
 function absorbFaction(winner,loser){winner.power+=Math.floor(loser.power*.75);winner.collected+=Math.min(80,Math.max(5,Math.floor(loser.power/Math.max(1,levels[winner.level].mult))));spawnBurst(loser.group.position,winner.color,26);scene.remove(loser.group);loser.dead=true;checkEvolution(winner)}
 function defeatEnemy(e){state.kills++;player.power+=Math.floor(e.power*.6);player.collected+=Math.min(80,Math.max(5,Math.floor(e.power/Math.max(1,levels[player.level].mult))));state.score+=e.power*10;spawnBurst(e.group.position,0xffd25b,35);scene.remove(e.group);e.dead=true;checkEvolution(player)}
 function checkEvolution(u){while(u.collected>=levels[u.level].need&&u.level<levels.length-1){u.collected-=levels[u.level].need;u.level++;u.range=levels[u.level].range;u.color=(u.team==='player')?levels[u.level].color:u.color;if(u===player){followers.forEach(f=>scene.remove(f.group));followers=[];showToast(`${levels[u.level].name}`);spawnRing(u.group.position,u.color);}refreshUnitVisual(u)}}
-function updateEnemyVisual(e){const txt=`${levels[e.level].name} | ${levels[e.level].tag}\n${levels[e.level].stars}  ${Math.floor(e.power).toLocaleString()}`;if(e.level>=1&&!e.label)refreshUnitVisual(e);if(e.label)updateLabel(e.label,txt,e.color)}
+function updateEnemyVisual(e){const txt=(e.level===0)?`적 세력\n★  ${Math.floor(e.power).toLocaleString()}`:`${levels[e.level].name} | ${levels[e.level].tag}\n${levels[e.level].stars}  ${Math.floor(e.power).toLocaleString()}`;if(!e.label)refreshUnitVisual(e);if(e.label)updateLabel(e.label,txt,e.color)}
 function updateParticles(dt){particles=particles.filter(p=>{p.life-=dt;p.mesh.position.addScaledVector(p.vel,dt);p.mesh.material.opacity=Math.max(0,p.life/p.max);if(p.life<=0){scene.remove(p.mesh);return false}return true})}
 function spawnBurst(pos,color,count){for(let i=0;i<count;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.32,8,8),new THREE.MeshBasicMaterial({color,transparent:true,opacity:1}));m.position.copy(pos);m.position.y=2+Math.random()*5;scene.add(m);particles.push({mesh:m,vel:new THREE.Vector3((Math.random()-.5)*20,Math.random()*14,(Math.random()-.5)*20),life:.5+Math.random()*.45,max:.95})}}
 function spawnRing(pos,color){const ring=new THREE.Mesh(new THREE.TorusGeometry(4,.22,8,120),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.7}));ring.rotation.x=Math.PI/2;ring.position.copy(pos);ring.position.y=.4;scene.add(ring);particles.push({mesh:ring,vel:new THREE.Vector3(0,0,0),life:1.1,max:1.1});let s=1;const id=setInterval(()=>{s+=.35;ring.scale.set(s,s,s);if(s>8)clearInterval(id)},30)}
@@ -347,7 +281,7 @@ function formatTime(t){t=Math.max(0,Math.ceil(t));return `${String(Math.floor(t/
 function endGame(title,desc){if(state.over)return;state.over=true;$('#overTitle').textContent=title;$('#overDesc').textContent=`${desc} 최종 점수 ${state.score.toLocaleString()}, 도달 단계 ${levels[player.level].name}.`;$('#gameOver').classList.add('show')}
 function render(){renderer.render(scene,camera)}
 function resize(){if(!renderer)return;const w=game.clientWidth,h=game.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
-addEventListener('resize',resize);function togglePause(){if(!state||state.over)return;paused=!paused;const o=document.getElementById('pauseOverlay');if(o)o.style.display=paused?'flex':'none';if(clock)clock.getDelta()}document.addEventListener('keydown',e=>{if(e.code==='Escape'||e.code==='KeyP'||e.key==='Escape'||String(e.key).toLowerCase()==='p'){e.preventDefault();togglePause();return}keys[e.code]=true},{capture:true});window.addEventListener('keydown',e=>{if(e.code==='Escape'||e.code==='KeyP'||e.key==='Escape'||String(e.key).toLowerCase()==='p'){e.preventDefault();togglePause()}},{capture:true});document.addEventListener('keyup',e=>{keys[e.code]=false},{capture:true});
+addEventListener('resize',resize);function setPaused(v){if(!state||state.over)return;paused=!!v;const o=document.getElementById('pauseOverlay');if(o)o.style.display=paused?'flex':'none';const b=document.getElementById('pauseBtn');if(b)b.textContent=paused?'계속하기':'일시정지';if(clock)clock.getDelta()}function togglePause(){setPaused(!paused)}window.addEventListener('keydown',e=>{const k=String(e.key||'').toLowerCase();if(k==='escape'||k==='p'||e.code==='Escape'||e.code==='KeyP'){e.preventDefault();if(!e.repeat)togglePause();return}if(!paused)keys[e.code]=true},{capture:true});window.addEventListener('keyup',e=>{keys[e.code]=false},{capture:true});
 let joyVec={x:0,y:0};const joy=$('#joy');function joySet(e){const r=joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;const p=e.touches?e.touches[0]:e;let x=(p.clientX-cx)/(r.width*.36),y=(p.clientY-cy)/(r.height*.36);const l=Math.hypot(x,y);if(l>1){x/=l;y/=l}joyVec={x,y}}joy.addEventListener('touchstart',joySet);joy.addEventListener('touchmove',joySet);joy.addEventListener('touchend',()=>joyVec={x:0,y:0});
 </script>
 <div id="pauseOverlay" style="display:none;position:fixed;inset:0;z-index:99;background:rgba(3,7,14,.72);align-items:center;justify-content:center;color:#fff;font:700 34px Arial;text-align:center">일시정지<br><span style="font-size:15px;color:#b9c8df">ESC 또는 P를 눌러 계속하기</span></div></body>
