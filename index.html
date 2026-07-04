@@ -80,7 +80,7 @@ const worldSize=260;
 function showGame(){home.classList.remove('active');game.classList.add('active');document.body.scrollTop=0;document.documentElement.scrollTop=0;requestAnimationFrame(()=>{resize();canvas?.focus?.()})}
 function showHome(){game.classList.remove('active');home.classList.add('active');cancelAnimationFrame(animationId)}
 function startGame(){showGame();paused=false;keys={};joyVec={x:0,y:0};$('#gameOver').classList.remove('show');const po=document.getElementById('pauseOverlay');if(po)po.style.display='none';init3D();}
-function init3D(){paused=false;cancelAnimationFrame(animationId);if(renderer){renderer.dispose();renderer=null;}scene=new THREE.Scene();scene.background=new THREE.Color(0x07111f);scene.fog=new THREE.Fog(0x07111f,110,245);camera=new THREE.PerspectiveCamera(42,1,.1,700);renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;clock=new THREE.Clock();followers=[];npcs=[];enemies=[];obstacles=[];particles=[];labels=[];state={score:0,kills:0,time:180,over:false};
+function init3D(){paused=false;cancelAnimationFrame(animationId);if(renderer){renderer.dispose();renderer=null;}scene=new THREE.Scene();scene.background=new THREE.Color(0x07111f);scene.fog=new THREE.Fog(0x07111f,110,245);camera=new THREE.PerspectiveCamera(42,1,.1,700);renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.24;clock=new THREE.Clock();followers=[];npcs=[];enemies=[];obstacles=[];particles=[];labels=[];state={score:0,kills:0,time:180,over:false};
  const hemi=new THREE.HemisphereLight(0xbfd8ff,0x47321d,2.2);scene.add(hemi);const sun=new THREE.DirectionalLight(0xffe0a6,3.8);sun.position.set(-45,80,35);sun.castShadow=true;sun.shadow.mapSize.set(4096,4096);sun.shadow.camera.left=-150;sun.shadow.camera.right=150;sun.shadow.camera.top=150;sun.shadow.camera.bottom=-150;scene.add(sun);const rim=new THREE.DirectionalLight(0x85b9ff,1.15);rim.position.set(55,45,-65);scene.add(rim);
  createGround();createTown();player=createUnit(0,0,0,0,true);player.power=1;player.collected=1;player.score=0;player.level=0;player.speed=26;player.team='player';player.targetPath=[];scene.add(player.group);
  for(let i=0;i<210;i++) spawnNpc();
@@ -197,7 +197,90 @@ function buildCharacterModel(level,color){
  M(new THREE.BoxGeometry(1.2*s,.06*s,.08*s),trim,0,3.12,.63,0,0,0);
  if(level>=1){M(new THREE.BoxGeometry(.18*s,.62*s,.10*s),trim,-.55,3.63,.78,0,0,.25);M(new THREE.BoxGeometry(.18*s,.62*s,.10*s),trim,.55,3.63,.78,0,0,-.25)}
  if(level>=2){M(new THREE.BoxGeometry(.08*s,1.6*s,.1*s),trim,-.72,3.55,.82,0,0,.18);M(new THREE.BoxGeometry(.08*s,1.6*s,.1*s),trim,.72,3.55,.82,0,0,-.18)}
- group.scale.setScalar(1.14);return group}
+
+ // high quality character pass: readable casual fantasy silhouette, layered clothing and gear
+ const decoGold=mat(0xffd978,{metalness:.72,roughness:.18,emissive:0x2b1800,emissiveIntensity:.18});
+ const gemBlue=mat(0x78e8ff,{roughness:.1,metalness:.12,emissive:0x1bc4ff,emissiveIntensity:1.0});
+ const gemRed=mat(0xff4d4d,{roughness:.12,metalness:.1,emissive:0xff1d1d,emissiveIntensity:.65});
+ const gemPurple=mat(0xc783ff,{roughness:.1,metalness:.1,emissive:0x7b2cff,emissiveIntensity:.8});
+ const clothDark=mat(0x101827,{roughness:.62});
+ // face details and hair volume, visible even from the top camera
+ M(new THREE.SphereGeometry(.055*s,10,8),mat(0xffffff,{roughness:.25}),-.235,5.30,.612);
+ M(new THREE.SphereGeometry(.055*s,10,8),mat(0xffffff,{roughness:.25}),.235,5.30,.612);
+ M(new THREE.SphereGeometry(.028*s,8,6),black,-.225,5.30,.652);
+ M(new THREE.SphereGeometry(.028*s,8,6),black,.225,5.30,.652);
+ M(new THREE.BoxGeometry(.22*s,.035*s,.035*s),hairMat,-.25,5.48,.62,0,0,-.18);
+ M(new THREE.BoxGeometry(.22*s,.035*s,.035*s),hairMat,.25,5.48,.62,0,0,.18);
+ M(new THREE.SphereGeometry(.055*s,8,6),mat(0xd59672,{roughness:.65}),0,5.20,.69);
+ M(new THREE.BoxGeometry(.35*s,.04*s,.035*s),mat(0x7d392e,{roughness:.75}),0,5.03,.665);
+ // hands, gloves and bracers
+ M(new THREE.BoxGeometry(.28*s,.16*s,.22*s),level>=1?darkSteel:leather,-1.25,2.98,.12,0,0,.24);
+ M(new THREE.BoxGeometry(.28*s,.16*s,.22*s),level>=1?darkSteel:leather,1.25,2.98,.12,0,0,-.24);
+ M(new THREE.SphereGeometry(.18*s,12,8),skin,-1.38,2.62,.2);
+ M(new THREE.SphereGeometry(.18*s,12,8),skin,1.38,2.62,.2);
+ // tunic skirt panels replace blocky lower body impression
+ const panelMat=level===0?mat(0x6f8a5b,{roughness:.65}):level===1?blue:level===2?purple:level===3?red:level>=4?gold:white;
+ M(new THREE.BoxGeometry(.62*s,.78*s,.10*s),panelMat,-.32,2.32,.58,.06,0,.05);
+ M(new THREE.BoxGeometry(.62*s,.78*s,.10*s),panelMat,.32,2.32,.58,.06,0,-.05);
+ M(new THREE.BoxGeometry(.22*s,.78*s,.09*s),trim,-.78,2.32,.5,.06,0,.15);
+ M(new THREE.BoxGeometry(.22*s,.78*s,.09*s),trim,.78,2.32,.5,.06,0,-.15);
+ M(new THREE.BoxGeometry(.56*s,.16*s,.62*s),level>=2?darkSteel:leather,-.38,1.98,.08);
+ M(new THREE.BoxGeometry(.56*s,.16*s,.62*s),level>=2?darkSteel:leather,.38,1.98,.08);
+ M(new THREE.BoxGeometry(.55*s,.32*s,.88*s),bootMat,-.38,.72,.25,0,.06,0);
+ M(new THREE.BoxGeometry(.55*s,.32*s,.88*s),bootMat,.38,.72,.25,0,-.06,0);
+ if(level===0){
+   M(new THREE.BoxGeometry(.42*s,.08*s,.12*s),mat(0xe7c795,{roughness:.6}),-.32,3.95,.68,0,0,.35);
+   M(new THREE.BoxGeometry(.42*s,.08*s,.12*s),mat(0xe7c795,{roughness:.6}),.32,3.95,.68,0,0,-.35);
+   M(new THREE.CylinderGeometry(.05*s,.06*s,1.75*s,8),mat(0xb7b1a2,{roughness:.55}),1.22,2.85,.18,0,0,-.55);
+ }
+ if(level>=1){
+   // blue captain: helmet rim, shield crest, sword guard
+   M(new THREE.TorusGeometry(.62*s,.045*s,8,28),decoGold,0,5.82,.01,Math.PI/2);
+   M(new THREE.BoxGeometry(.92*s,.12*s,.13*s),decoGold,0,3.96,.91);
+   M(new THREE.ConeGeometry(.16*s,.42*s,3),decoGold,-1.52,3.35,.46,0,0,Math.PI/3);
+   M(new THREE.ConeGeometry(.16*s,.42*s,3),decoGold,-1.52,3.35,.28,0,0,-Math.PI/3);
+   M(new THREE.BoxGeometry(.54*s,.12*s,.18*s),decoGold,1.34,2.92,.30,0,0,-.45);
+ }
+ if(level>=2){
+   // purple dominator: angular armor, split cape and glowing gem
+   M(new THREE.ConeGeometry(.24*s,.75*s,4),darkSteel,-.93,4.78,.16,0,0,.65);
+   M(new THREE.ConeGeometry(.24*s,.75*s,4),darkSteel,.93,4.78,.16,0,0,-.65);
+   M(new THREE.SphereGeometry(.16*s,14,10),gemPurple,0,4.18,.93);
+   M(new THREE.BoxGeometry(.95*s,.08*s,2.8*s),mat(0x25104f,{roughness:.56}),-.72,3.08,-1.12,.32,0,.18);
+   M(new THREE.BoxGeometry(.95*s,.08*s,2.8*s),mat(0x25104f,{roughness:.56}),.72,3.08,-1.12,.32,0,-.18);
+ }
+ if(level>=3){
+   // red lord: fur collar and heavier mantle
+   M(new THREE.SphereGeometry(.32*s,12,8),mat(0xe6d0ae,{roughness:.72}),-.78,4.78,.42);
+   M(new THREE.SphereGeometry(.32*s,12,8),mat(0xe6d0ae,{roughness:.72}),.78,4.78,.42);
+   M(new THREE.BoxGeometry(1.65*s,.18*s,.28*s),decoGold,0,4.58,.66);
+   M(new THREE.SphereGeometry(.18*s,14,10),gemRed,0,4.58,.86);
+   M(new THREE.BoxGeometry(.18*s,1.4*s,.12*s),decoGold,-.58,3.52,1.03,0,0,.12);
+   M(new THREE.BoxGeometry(.18*s,1.4*s,.12*s),decoGold,.58,3.52,1.03,0,0,-.12);
+ }
+ if(level>=4){
+   // king: broad golden armor, royal collar, crown jewels
+   M(new THREE.ConeGeometry(.42*s,.65*s,4),decoGold,-1.08,4.85,.2,0,0,.7);
+   M(new THREE.ConeGeometry(.42*s,.65*s,4),decoGold,1.08,4.85,.2,0,0,-.7);
+   M(new THREE.TorusGeometry(.88*s,.055*s,8,36),decoGold,0,6.55,.02,Math.PI/2);
+   for(let i=0;i<5;i++){const a=(i-2)*.28;M(new THREE.SphereGeometry(.065*s,10,8),gemBlue,Math.sin(a)*.55,6.86,Math.cos(a)*.15+.08)}
+   M(new THREE.BoxGeometry(1.58*s,.16*s,.18*s),white,0,4.04,1.38);
+   M(new THREE.BoxGeometry(.18*s,1.7*s,.14*s),decoGold,-.72,3.68,1.42,0,0,.08);
+   M(new THREE.BoxGeometry(.18*s,1.7*s,.14*s),decoGold,.72,3.68,1.42,0,0,-.08);
+ }
+ if(level>=5){
+   // emperor: ceremonial mantle, back halo and larger silhouette
+   M(new THREE.TorusGeometry(1.58*s,.065*s,8,48),decoGold,0,5.32,-.48,Math.PI/2);
+   M(new THREE.BoxGeometry(2.45*s,.18*s,.22*s),decoGold,0,4.72,.74);
+   M(new THREE.SphereGeometry(.18*s,16,10),gemBlue,-.68,4.72,.92);
+   M(new THREE.SphereGeometry(.18*s,16,10),gemRed,0,4.72,.94);
+   M(new THREE.SphereGeometry(.18*s,16,10),gemBlue,.68,4.72,.92);
+   M(new THREE.BoxGeometry(.92*s,2.15*s,.11*s),white,-.78,3.35,1.52,.04,0,.08);
+   M(new THREE.BoxGeometry(.92*s,2.15*s,.11*s),white,.78,3.35,1.52,.04,0,-.08);
+   M(new THREE.BoxGeometry(.20*s,2.25*s,.13*s),decoGold,-1.25,3.35,1.58,.04,0,.08);
+   M(new THREE.BoxGeometry(.20*s,2.25*s,.13*s),decoGold,1.25,3.35,1.58,.04,0,-.08);
+ }
+ group.scale.setScalar(1.18);return group}
 function animateCharacterUnit(u,t){if(!u||!u.group)return;const parts=u.group.children[0]?.userData?.walkParts;if(!parts)return;const moving=(u.lastPos?u.group.position.distanceTo(u.lastPos):0)>0.01;u.lastPos=u.group.position.clone();const w=moving?Math.sin(t*9+u.group.id)*.42:Math.sin(t*2+u.group.id)*.05;parts[0].rotation.x=w;parts[1].rotation.x=-w;parts[2].rotation.x=-w*.7;parts[3].rotation.x=w*.7}
 function animateAllCharacters(){const t=performance.now()/1000;[player,...followers,...npcs,...enemies].forEach(u=>!u?.dead&&animateCharacterUnit(u,t))}
 function refreshUnitVisual(u){const pos=u.group.position.clone(),rot=u.group.rotation.y,parent=u.group.parent;if(parent)parent.remove(u.group);const newGroup=new THREE.Group();const model=buildCharacterModel(u.level,u.color);newGroup.add(model);const l=levels[u.level];const ring=new THREE.Mesh(new THREE.TorusGeometry(l.range,.08,8,96),new THREE.MeshBasicMaterial({color:u.color,transparent:true,opacity:u.team==='player'?.38:.20}));ring.rotation.x=Math.PI/2;ring.position.y=.15;newGroup.add(ring);let label=null;if(u.level>=1||u.team==='player'&&u.level>=1){label=makeLabel(`${l.name} | ${l.tag}\n${l.stars}  ${Math.floor(u.power).toLocaleString()}`);label.position.y=11.5*l.scale;newGroup.add(label)}newGroup.position.copy(pos);newGroup.rotation.y=rot;u.group=newGroup;u.ring=ring;u.label=label;u.range=l.range;u.radius=1.8*l.scale;if(parent)parent.add(newGroup)}
