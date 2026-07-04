@@ -18,6 +18,18 @@ const startNotice = document.getElementById('startNotice');
 
 const WORLD = { w: 2600, h: 1800 };
 const VIEW = { w: gameCanvas.width, h: gameCanvas.height };
+function fitGameCanvas(){
+  const wrap = document.querySelector('.canvas-wrap');
+  if(!wrap) return;
+  const rect = wrap.getBoundingClientRect();
+  if(rect.width < 10 || rect.height < 10) return;
+  const cssRatio = rect.width / rect.height;
+  const nativeRatio = 1200 / 720;
+  // Keep the game camera stable, but scale the canvas to the user's screen so it never gets cut off.
+  gameCanvas.style.width = '100%';
+  gameCanvas.style.height = '100%';
+}
+window.addEventListener('resize', fitGameCanvas);
 
 const evolutions = [
   { name:'시민 리더', value:1, need:100, color:'#2f80ff', accent:'#8fc6ff', size:17, aura:70, magnet:0.55, desc:'기본 캐릭터. 작은 흡수 범위를 가지고 시작합니다.' },
@@ -59,7 +71,7 @@ function showView(id){
   document.body.classList.toggle('playing-mode', id === 'game');
   if(id === 'game'){
     startGame(true);
-    requestAnimationFrame(() => document.getElementById('game').scrollIntoView({block:'start'}));
+    requestAnimationFrame(() => { fitGameCanvas(); window.scrollTo({top:0, behavior:'instant'}); });
   } else {
     window.scrollTo({top:0, behavior:'smooth'});
   }
@@ -182,8 +194,8 @@ function absorb(c){
 }
 function evolve(){
   state.level++; const e=evolutions[state.level]; state.stageProgress=1; state.followers=[]; state.shake=16;
-  burst(state.player.x,state.player.y,e.color,120,true); addFloater(state.player.x,state.player.y-70,'진화 완료',e.accent);
-  bannerLevel.textContent=e.name; bannerBoost.textContent=`흡수 점수 x${e.value.toLocaleString()}  흡수 범위 확대`; banner.classList.remove('hidden'); setTimeout(()=>banner.classList.add('hidden'),1500);
+  burst(state.player.x,state.player.y,e.color,46,true); addFloater(state.player.x,state.player.y-70,`${state.level+1}단계 진화`,e.accent);
+  bannerLevel.textContent=`${state.level+1}단계 ${e.name}`; bannerBoost.textContent=`흡수 점수 x${e.value.toLocaleString()} · 외형 강화`; banner.classList.remove('hidden'); setTimeout(()=>banner.classList.add('hidden'),1050);
 }
 
 function enemyPower(enemy){ return enemy.progress + enemy.level*35; }
@@ -271,7 +283,7 @@ function enemyAbsorbCitizen(enemy,c){
   enemy.score += c.value * evolutions[enemy.level].value;
   burst(c.x,c.y,enemy.color,c.tier>1?22:8,c.tier>1);
   if(enemy.progress >= evolutions[enemy.level].need && enemy.level < evolutions.length-1){
-    enemy.level++; enemy.progress=1; enemy.r = 18 + enemy.level*4; burst(enemy.x,enemy.y,enemy.color,70,true); addFloater(enemy.x,enemy.y-55,'적 진화',enemy.color);
+    enemy.level++; enemy.progress=1; enemy.r = 18 + enemy.level*4; burst(enemy.x,enemy.y,enemy.color,34,true); addFloater(enemy.x,enemy.y-55,`${enemy.level+1}단계 적`,enemy.color);
   }
 }
 function enemyAbsorbEnemy(enemy,other){
@@ -306,7 +318,7 @@ function updateFollowers(dt){
   state.followers.forEach((f,i)=>{ const angle=i*2.399+state.pulse*.25, ring=48+Math.floor(i/12)*26; const tx=state.player.x+Math.cos(angle)*ring, ty=state.player.y+Math.sin(angle)*ring*.72; f.x+=(tx-f.x)*Math.min(1,dt*5.2); f.y+=(ty-f.y)*Math.min(1,dt*5.2); });
 }
 function addFloater(x,y,text,color){ state.floaters.push({x,y,text,color,life:.9,vy:-34}); }
-function burst(x,y,color,count=16,big=false){ for(let i=0;i<count;i++){ const a=Math.random()*Math.PI*2,s=(big?95:45)+Math.random()*(big?240:80); state.particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,r:big?3+Math.random()*7:2+Math.random()*3,grow:big?24:8,life:big?.85+Math.random()*.45:.35+Math.random()*.35,color}); } }
+function burst(x,y,color,count=16,big=false){ for(let i=0;i<count;i++){ const a=Math.random()*Math.PI*2,s=(big?60:36)+Math.random()*(big?135:65); state.particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,r:big?2+Math.random()*4:1.8+Math.random()*2.2,grow:big?12:6,life:big?.45+Math.random()*.35:.28+Math.random()*.28,color}); } }
 function updateParticles(dt){ state.particles.forEach(p=>{p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.r+=p.grow*dt;p.vx*=.985;p.vy*=.985;}); state.particles=state.particles.filter(p=>p.life>0); state.floaters.forEach(f=>{f.life-=dt;f.y+=f.vy*dt;}); state.floaters=state.floaters.filter(f=>f.life>0); state.player.trail.forEach(t=>t.life-=dt); state.player.trail=state.player.trail.filter(t=>t.life>0); }
 function finishGame(){
   state.finished=true; state.running=false; const wrap=document.querySelector('.canvas-wrap'); const old=wrap.querySelector('.finish-card-wrap'); if(old) old.remove();
@@ -323,9 +335,10 @@ function draw(){
   drawParticles(ctx); drawFloaters(ctx); ctx.restore(); drawMiniMap(ctx);
 }
 function drawWorld(c){
-  const g=c.createLinearGradient(0,0,WORLD.w,WORLD.h); g.addColorStop(0,'#4f7a58'); g.addColorStop(.48,'#c69b5f'); g.addColorStop(1,'#4e3828'); c.fillStyle=g; c.fillRect(0,0,WORLD.w,WORLD.h); drawRoads(c); drawGridTexture(c);
+  const g=c.createLinearGradient(0,0,WORLD.w,WORLD.h); g.addColorStop(0,'#3d7249'); g.addColorStop(.42,'#c99a58'); g.addColorStop(.70,'#9b7346'); g.addColorStop(1,'#463020'); c.fillStyle=g; c.fillRect(0,0,WORLD.w,WORLD.h); drawRoads(c); drawStoneTiles(c); drawGridTexture(c);
   for(const t of decoTrees) if(inView(t.x,t.y,80)) drawTree(c,t.x,t.y,t.s); vignette(c);
 }
+function drawStoneTiles(c){ c.save(); c.globalAlpha=.16; c.strokeStyle='rgba(255,245,210,.45)'; c.lineWidth=1; const startX=Math.floor(state.camera.x/74)*74-80, endX=state.camera.x+VIEW.w+120; const startY=Math.floor(state.camera.y/52)*52-80, endY=state.camera.y+VIEW.h+120; for(let y=startY;y<endY;y+=52){ for(let x=startX;x<endX;x+=74){ if(((x+y)|0)%5===0) continue; roundRect(c,x+(y%104?14:0),y,62,36,7); c.stroke(); } } c.restore(); }
 function inView(x,y,pad=150){ return x>state.camera.x-pad && x<state.camera.x+VIEW.w+pad && y>state.camera.y-pad && y<state.camera.y+VIEW.h+pad; }
 function drawRoads(c){ c.save(); c.globalAlpha=.95; c.strokeStyle='rgba(92,66,42,.72)'; c.lineWidth=70; c.lineCap='round'; c.lineJoin='round'; c.beginPath(); c.moveTo(-100,860); c.bezierCurveTo(480,700,980,1050,1580,820); c.bezierCurveTo(1960,670,2220,780,WORLD.w+120,610); c.stroke(); c.beginPath(); c.moveTo(1180,-80); c.bezierCurveTo(960,480,1340,830,1120,WORLD.h+90); c.stroke(); c.beginPath(); c.moveTo(210,1500); c.bezierCurveTo(790,1280,1420,1500,2100,1300); c.stroke(); c.strokeStyle='rgba(255,235,178,.14)'; c.lineWidth=5; c.setLineDash([36,28]); c.beginPath(); c.moveTo(-100,860); c.bezierCurveTo(480,700,980,1050,1580,820); c.bezierCurveTo(1960,670,2220,780,WORLD.w+120,610); c.stroke(); c.setLineDash([]); c.restore(); }
 function drawGridTexture(c){ c.save(); c.globalAlpha=.06; c.strokeStyle='#fff'; for(let x=0;x<WORLD.w;x+=90){ c.beginPath(); c.moveTo(x,0); c.lineTo(x-520,WORLD.h); c.stroke(); } c.restore(); }
@@ -336,10 +349,50 @@ function drawWell(c,x,y,s=1){ c.save(); c.fillStyle='rgba(0,0,0,.28)'; c.beginPa
 function drawMarket(c,x,y,s=1){ c.save(); c.translate(x,y); c.scale(s,s); c.fillStyle='rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(0,70,92,24,0,0,Math.PI*2); c.fill(); c.fillStyle='#d9513d'; c.fillRect(-75,0,150,42); c.fillStyle='#ffd36a'; for(let i=-70;i<75;i+=30)c.fillRect(i,0,15,42); c.fillStyle='#7b4c29'; c.fillRect(-66,42,12,54); c.fillRect(54,42,12,54); c.restore(); }
 function drawTower(c,x,y,s=1){ c.save(); c.translate(x,y); c.scale(s,s); c.fillStyle='rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(0,100,58,18,0,0,Math.PI*2); c.fill(); c.fillStyle='#8f7757'; roundRect(c,-28,10,56,95,9); c.fill(); c.fillStyle='#51301f'; c.beginPath(); c.moveTo(-40,18); c.lineTo(0,-28); c.lineTo(40,18); c.closePath(); c.fill(); c.restore(); }
 function vignette(c){ const g=c.createRadialGradient(state.camera.x+VIEW.w/2,state.camera.y+VIEW.h/2,80,state.camera.x+VIEW.w/2,state.camera.y+VIEW.h/2,Math.max(VIEW.w,VIEW.h)*.78); g.addColorStop(0,'rgba(255,255,255,0)'); g.addColorStop(1,'rgba(0,0,0,.32)'); c.fillStyle=g; c.fillRect(state.camera.x,state.camera.y,VIEW.w,VIEW.h); }
-function drawAura(c,x,y,e){ c.save(); const pulse=1+Math.sin(state.pulse*4)*.04; c.strokeStyle=e.color; c.globalAlpha=.34; c.lineWidth=3; c.setLineDash([12,9]); c.beginPath(); c.arc(x,y,e.aura*pulse,0,Math.PI*2); c.stroke(); c.setLineDash([]); const g=c.createRadialGradient(x,y,10,x,y,e.aura); g.addColorStop(0,e.color+'28'); g.addColorStop(.52,e.color+'12'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; c.beginPath(); c.arc(x,y,e.aura,0,Math.PI*2); c.fill(); c.restore(); }
-function drawPlayer(c,p,e){ for(const t of state.player.trail){ c.globalAlpha=Math.max(0,t.life)*.28; drawCharacter(c,t.x,t.y,t.size*.9,e.color,e.accent,state.level,true); } c.globalAlpha=1; drawCharacter(c,p.x,p.y,e.size,e.color,e.accent,state.level,false); drawNameplate(c,p.x,p.y-e.size-38,`${Math.floor(state.stageProgress)} / ${e.need}`,e.color); }
-function drawCharacter(c,x,y,size,color,accent,level,ghost=false){ c.save(); c.fillStyle='rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(x,y+size*1.05,size*1.05,size*.32,0,0,Math.PI*2); c.fill(); if(level>=3){ c.fillStyle=ghost?color:shade(color,-18); c.globalAlpha=ghost?.18:.68; c.beginPath(); c.moveTo(x-size*.92,y-size*.2); c.quadraticCurveTo(x,y+size*1.9,x+size*.92,y-size*.2); c.closePath(); c.fill(); c.globalAlpha=1; } c.strokeStyle=accent; c.lineWidth=Math.max(2,size*.09); c.globalAlpha=ghost?.25:.85; c.beginPath(); c.arc(x,y+size*.18,size*(1.08+level*.08),state.pulse*1.5,state.pulse*1.5+Math.PI*1.45); c.stroke(); c.globalAlpha=1; const body=c.createLinearGradient(x-size,y-size,x+size,y+size); body.addColorStop(0,accent); body.addColorStop(.45,color); body.addColorStop(1,shade(color,-36)); c.fillStyle=body; roundRect(c,x-size*.62,y-size*.16,size*1.24,size*1.33,size*.34); c.fill(); c.fillStyle=accent; roundRect(c,x-size*.47,y+size*.38,size*.94,size*.22,size*.12); c.fill(); c.fillStyle=body; c.beginPath(); c.arc(x,y-size*.78,size*.48,0,Math.PI*2); c.fill(); c.fillStyle='rgba(255,255,255,.85)'; c.beginPath(); c.arc(x-size*.14,y-size*.86,size*.055,0,Math.PI*2); c.arc(x+size*.14,y-size*.86,size*.055,0,Math.PI*2); c.fill(); if(level>=2) drawCrown(c,x,y-size*1.32,size*.72,level>=4?'#ffd36a':accent); c.restore(); }
-function drawCrown(c,x,y,s,color){ c.fillStyle=color; c.beginPath(); c.moveTo(x-s*.55,y+s*.35); c.lineTo(x-s*.38,y-s*.2); c.lineTo(x-s*.14,y+s*.14); c.lineTo(x,y-s*.42); c.lineTo(x+s*.14,y+s*.14); c.lineTo(x+s*.38,y-s*.2); c.lineTo(x+s*.55,y+s*.35); c.closePath(); c.fill(); }
+function drawAura(c,x,y,e){ c.save(); const pulse=1+Math.sin(state.pulse*3)*.025; c.strokeStyle=e.color; c.globalAlpha=.26; c.lineWidth=3; c.setLineDash([16,12]); c.beginPath(); c.arc(x,y,e.aura*pulse,0,Math.PI*2); c.stroke(); c.setLineDash([]); const g=c.createRadialGradient(x,y,18,x,y,e.aura); g.addColorStop(0,e.color+'18'); g.addColorStop(.55,e.color+'0d'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; c.beginPath(); c.arc(x,y,e.aura,0,Math.PI*2); c.fill(); c.restore(); }
+function drawPlayer(c,p,e){ for(const t of state.player.trail){ c.globalAlpha=Math.max(0,t.life)*.22; drawCharacter(c,t.x,t.y,t.size*.9,e.color,e.accent,state.level,true); } c.globalAlpha=1; drawCharacter(c,p.x,p.y,e.size,e.color,e.accent,state.level,false); drawStagePlate(c,p.x,p.y-e.size-58,`${state.level+1}단계 ${e.name}`,`${Math.floor(state.stageProgress)} / ${e.need}`,e.color); }
+function drawCharacter(c,x,y,size,color,accent,level,ghost=false){
+  c.save();
+  const alpha = ghost ? .22 : 1;
+  c.globalAlpha = alpha;
+  c.fillStyle='rgba(0,0,0,.34)';
+  c.beginPath(); c.ellipse(x+size*.08,y+size*1.08,size*1.15,size*.34,0,0,Math.PI*2); c.fill();
+
+  // 단계별로 실루엣을 확실히 다르게 만든다.
+  if(level>=3){
+    c.fillStyle=level>=4?'rgba(255,210,92,.34)':shade(color,-18);
+    c.globalAlpha=ghost?.12:.78;
+    c.beginPath(); c.moveTo(x-size*(.82+level*.08),y-size*.24); c.quadraticCurveTo(x,y+size*(1.95+level*.08),x+size*(.82+level*.08),y-size*.24); c.closePath(); c.fill();
+    c.globalAlpha=alpha;
+  }
+  if(level>=5 && !ghost){
+    c.strokeStyle='rgba(255,255,255,.7)'; c.lineWidth=3;
+    c.beginPath(); c.arc(x,y-size*.36,size*1.55,0,Math.PI*2); c.stroke();
+    for(let i=0;i<6;i++){ const a=state.pulse*1.2+i*Math.PI/3; c.fillStyle=i%2?'#fff2ad':accent; c.beginPath(); c.arc(x+Math.cos(a)*size*1.55,y-size*.36+Math.sin(a)*size*.74,size*.1,0,Math.PI*2); c.fill(); }
+  }
+  if(level>=4 && !ghost){
+    c.strokeStyle='rgba(255,211,106,.75)'; c.lineWidth=3;
+    c.beginPath(); c.arc(x,y+size*.2,size*1.35,state.pulse*.9,state.pulse*.9+Math.PI*1.65); c.stroke();
+  } else {
+    c.strokeStyle=accent; c.lineWidth=Math.max(2,size*.08); c.globalAlpha=ghost?.18:.62;
+    c.beginPath(); c.arc(x,y+size*.18,size*(1.02+level*.08),state.pulse*1.2,state.pulse*1.2+Math.PI*1.25); c.stroke(); c.globalAlpha=alpha;
+  }
+  const body=c.createLinearGradient(x-size,y-size,x+size,y+size*1.2); body.addColorStop(0,'#ffffff'); body.addColorStop(.16,accent); body.addColorStop(.52,color); body.addColorStop(1,shade(color,-42));
+  c.fillStyle=body;
+  const bodyW=size*(1.05 + Math.min(level,5)*.08), bodyH=size*(1.22 + Math.min(level,5)*.04);
+  roundRect(c,x-bodyW/2,y-size*.12,bodyW,bodyH,size*.32); c.fill();
+  if(level>=2){ c.fillStyle=shade(color,-28); roundRect(c,x-bodyW*.62,y+size*.05,size*.22,size*.72,size*.1); c.fill(); roundRect(c,x+bodyW*.4,y+size*.05,size*.22,size*.72,size*.1); c.fill(); }
+  c.fillStyle=level>=4?'#ffd36a':accent; roundRect(c,x-bodyW*.36,y+size*.34,bodyW*.72,size*.2,size*.1); c.fill();
+  if(level>=3){ c.fillStyle=level>=4?'#ffd36a':accent; c.beginPath(); c.arc(x-bodyW*.55,y+size*.18,size*.18,0,Math.PI*2); c.arc(x+bodyW*.55,y+size*.18,size*.18,0,Math.PI*2); c.fill(); }
+  c.fillStyle=body; c.beginPath(); c.arc(x,y-size*.78,size*(.45+level*.015),0,Math.PI*2); c.fill();
+  c.fillStyle='rgba(255,255,255,.92)'; c.beginPath(); c.arc(x-size*.14,y-size*.86,size*.055,0,Math.PI*2); c.arc(x+size*.14,y-size*.86,size*.055,0,Math.PI*2); c.fill();
+  if(level===1) drawHelmet(c,x,y-size*1.16,size*.72,accent);
+  if(level>=2) drawCrown(c,x,y-size*1.32,size*(level>=4?.86:.68),level>=4?'#ffd36a':accent,level);
+  if(level>=4 && !ghost){ c.fillStyle='rgba(255,211,106,.86)'; c.beginPath(); c.moveTo(x-size*.78,y-size*.62); c.lineTo(x-size*1.02,y-size*.38); c.lineTo(x-size*.72,y-size*.28); c.closePath(); c.fill(); c.beginPath(); c.moveTo(x+size*.78,y-size*.62); c.lineTo(x+size*1.02,y-size*.38); c.lineTo(x+size*.72,y-size*.28); c.closePath(); c.fill(); }
+  c.restore();
+}
+function drawHelmet(c,x,y,s,color){ c.save(); c.fillStyle=color; c.beginPath(); c.ellipse(x,y,s*.55,s*.34,0,Math.PI,Math.PI*2); c.fill(); c.fillStyle='rgba(0,0,0,.28)'; roundRect(c,x-s*.38,y-s*.02,s*.76,s*.12,s*.05); c.fill(); c.restore(); }
+function drawCrown(c,x,y,s,color,level=2){ c.fillStyle=color; c.beginPath(); const tall=level>=4?1.2:1; c.moveTo(x-s*.62,y+s*.35); c.lineTo(x-s*.48,y-s*.22*tall); c.lineTo(x-s*.22,y+s*.08); c.lineTo(x,y-s*.52*tall); c.lineTo(x+s*.22,y+s*.08); c.lineTo(x+s*.48,y-s*.22*tall); c.lineTo(x+s*.62,y+s*.35); c.closePath(); c.fill(); c.fillStyle='rgba(255,255,255,.55)'; c.fillRect(x-s*.42,y+s*.20,s*.84,s*.08); }
 function drawCitizen(c,o){ if(!inView(o.x,o.y,120)) return; c.save(); const y=o.y+Math.sin(o.bob)*2; c.fillStyle='rgba(0,0,0,.24)'; c.beginPath(); c.ellipse(o.x,y+o.r*1.25,o.r*1.05,o.r*.32,0,0,Math.PI*2); c.fill(); if(o.tier>1){ c.strokeStyle=o.color; c.globalAlpha=.42; c.lineWidth=2; c.beginPath(); c.arc(o.x,y,o.r*2.05,0,Math.PI*2); c.stroke(); c.globalAlpha=1; } const grad=c.createLinearGradient(o.x-o.r,y-o.r,o.x+o.r,y+o.r); grad.addColorStop(0,o.outline); grad.addColorStop(.55,o.color); grad.addColorStop(1,shade(o.color,-34)); c.fillStyle=grad; roundRect(c,o.x-o.r*.55,y-o.r*.1,o.r*1.1,o.r*1.35,o.r*.32); c.fill(); c.beginPath(); c.arc(o.x,y-o.r*.75,o.r*.48,0,Math.PI*2); c.fill(); if(o.tier>1) drawNameplate(c,o.x,y-o.r*2.5,`${o.strength}`,o.color); c.restore(); }
 
 function drawEnemy(c,o){
@@ -351,12 +404,14 @@ function drawEnemy(c,o){
   c.strokeStyle=o.color; c.globalAlpha=.25; c.lineWidth=3; c.setLineDash([8,8]);
   c.beginPath(); c.arc(o.x,o.y,78+o.level*18,0,Math.PI*2); c.stroke(); c.setLineDash([]); c.globalAlpha=1;
   drawCharacter(c,o.x,o.y,18+o.level*4,o.color,o.accent,o.level,false);
-  drawNameplate(c,o.x,o.y-(44+o.level*5),`적 ${Math.floor(o.progress)}`,o.color);
+  const rel = enemyPower(o) > playerPower()*1.05 ? '위험' : enemyPower(o) < playerPower()*.92 ? '약함' : '비슷';
+  drawStagePlate(c,o.x,o.y-(50+o.level*7),`${o.level+1}단계 적`,`${rel} ${Math.floor(o.progress)}`,o.color);
   c.restore();
 }
 
 function drawFollower(c,o){ drawCharacter(c,o.x,o.y,o.r,o.color,'#bfe6ff',0,true); }
 function drawNameplate(c,x,y,text,color){ c.save(); c.font='800 16px system-ui'; const w=c.measureText(text).width+20; c.fillStyle='rgba(4,10,18,.78)'; roundRect(c,x-w/2,y-17,w,28,14); c.fill(); c.strokeStyle=color; c.lineWidth=2; c.stroke(); c.fillStyle='#ffffff'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(text,x,y-3); c.restore(); }
+function drawStagePlate(c,x,y,title,sub,color){ c.save(); c.font='900 14px system-ui'; const w=Math.max(c.measureText(title).width,c.measureText(sub).width)+24; c.fillStyle='rgba(4,10,18,.82)'; roundRect(c,x-w/2,y-24,w,44,15); c.fill(); c.strokeStyle=color; c.lineWidth=2.5; c.stroke(); c.fillStyle=color; c.textAlign='center'; c.textBaseline='middle'; c.fillText(title,x,y-12); c.font='900 16px system-ui'; c.fillStyle='#fff'; c.fillText(sub,x,y+8); c.restore(); }
 function drawParticles(c){ c.save(); for(const p of state.particles){ if(!inView(p.x,p.y,80)) continue; c.globalAlpha=Math.max(0,p.life); c.fillStyle=p.color; c.beginPath(); c.arc(p.x,p.y,p.r,0,Math.PI*2); c.fill(); } c.restore(); }
 function drawFloaters(c){ c.save(); c.textAlign='center'; c.textBaseline='middle'; for(const f of state.floaters){ if(!inView(f.x,f.y,80)) continue; c.globalAlpha=Math.max(0,f.life); c.font='900 20px system-ui'; c.strokeStyle='rgba(0,0,0,.8)'; c.lineWidth=5; c.strokeText(f.text,f.x,f.y); c.fillStyle=f.color; c.fillText(f.text,f.x,f.y); } c.restore(); }
 function drawMiniMap(c){ const x=1012,y=18,w=170,h=118; c.save(); c.fillStyle='rgba(5,11,20,.76)'; roundRect(c,x,y,w,h,16); c.fill(); c.strokeStyle='rgba(255,255,255,.18)'; c.stroke(); c.fillStyle='rgba(255,255,255,.14)'; for(const b of buildings){ c.fillRect(x+b.x/WORLD.w*w,y+b.y/WORLD.h*h,Math.max(2,b.w/WORLD.w*w),Math.max(2,b.h/WORLD.h*h)); } c.fillStyle='#d7d3c9'; for(let i=0;i<state.citizens.length;i+=6){ const z=state.citizens[i]; c.fillRect(x+z.x/WORLD.w*w,y+z.y/WORLD.h*h,2,2); } c.strokeStyle='#fff'; c.strokeRect(x+state.camera.x/WORLD.w*w,y+state.camera.y/WORLD.h*h,VIEW.w/WORLD.w*w,VIEW.h/WORLD.h*h); c.fillStyle='#ff6377'; for(const en of state.enemies){ c.beginPath(); c.arc(x+en.x/WORLD.w*w,y+en.y/WORLD.h*h,3,0,Math.PI*2); c.fill(); } c.fillStyle=evolutions[state.level].color; c.beginPath(); c.arc(x+state.player.x/WORLD.w*w,y+state.player.y/WORLD.h*h,4,0,Math.PI*2); c.fill(); c.restore(); }
